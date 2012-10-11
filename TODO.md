@@ -24,6 +24,7 @@ Last updated was on 2011-07-20.
 
 # User requests (Michael has emails)
 
+* GAE deployment via https://github.com/BauweBijl/gaecors
 * rudro re apache
 * Nginx Anatoly/Jan
 * DBPedia vs SPARQL
