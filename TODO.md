@@ -4,8 +4,8 @@ Last updated was on 2011-07-20.
 
 # Immediate things
 
-* adjust color/contrast of header to make it more readable
-* check Wiki page http://www.w3.org/wiki/CORS_Enabled re news (against 07/20 2011)
+* adjust color/contrast of header to make it more readable --> deprecated, new design
+* check Wiki page http://www.w3.org/wiki/CORS_Enabled re news (against 07/20 2011) --> #1
 * SPARQL EP: LinkedGeoData
 * CORSProxy https://github.com/bblfish/Play20/blob/webid/framework/src/webid/src/main/scala/org/w3/readwriteweb/play/CORSProxy.scala
 * http://apiblog.youtube.com/2012/05/unlocking-javascripts-potential-with.html
