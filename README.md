@@ -4,7 +4,7 @@ This is the source code and input-collection place for [enable-cors.org](http://
 
 ## Feedback
 
-If you have a new recipe for CORS deployment, a library or a site that uses or supports CORS, please raise and [issue](https://github.com/mhausenblas/enable-cors.org/issues) and we'll take it from there.
+If you have a new recipe for CORS deployment, or a library enabling CORS, or maybe want to report a new site or service that supports CORS, please raise an [issue](https://github.com/mhausenblas/enable-cors.org/issues) and we'll take it from there.
 
 ## Build
 
