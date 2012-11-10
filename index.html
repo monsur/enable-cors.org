@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>enable cross-origin resource sharing</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="CORS support site">
+	<meta name="author" content="Monsur Hossain">
+	<meta name="author" content="Michael Hausenblas">
+	<link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+	<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="enable-cors.css" rel="stylesheet" />
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link rel="shortcut icon" href="favicon.ico">
+</head>
+
+<body>
+	<div class="container navbar-wrapper">
+		<div class="navbar navbar-inverse">
+			<div class="navbar-inner">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="#">Enable CORS</a>
+				<div class="nav-collapse collapse">
+					<ul class="nav">
+						<li class="active"><a href="#">Home</a></li>
+						<li><a href="#server-side" title="I want to add CORS support to my server">Server</a></li>
+						<li><a href="#client-side" title="I want to use CORS from JavaScript">Client</a></li>
+						<li><a href="#deployment" title="Lists of APIs/Services/Datasets that support CORS">Deployment</a></li>
+						<li><a href="#toolkits" title="Lists of CORS-enabled toolkits">Toolkits</a></li>
+						<li><a href="http://client.cors-api.appspot.com/client" title="I want to test CORS capabilities" target="_blank">Test</a></li>
+						<li class="divider-vertical"></li>
+						<li><a href="https://github.com/mhausenblas/enable-cors.org/issues" target="_blank"><i class="icon-share-alt icon-white"></i> Suggest!</a></li>
+						<li><a href="https://groups.google.com/forum/?fromgroups#!forum/using-cors" target="_blank"><i class="icon-share-alt icon-white"></i> Discuss!</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+ 	
+	<div class="container">
+		<div class="hero-unit">
+			<h1><span class="muted">enable</span> cross-origin resource sharing</h1>
+			<p>Cross-Origin Resource Sharing (CORS) is a <a href="http://www.w3.org/TR/cors/">specification</a> that enables a truly open access across domain-boundaries. With this site we want to support the adoption of CORS.</p>
+			<p class="help-block pull-right">[<a href="http://en.wikipedia.org/wiki/Cross-Origin_Resource_Sharing">more...</a>]</p>
+		</div>
+	</div>
+
+	<div class="container">
+		<section>
+			<h2>What is this about?</h2>
+			<p>Introduction to CORS</p>
+			<p>Why is CORS important</p>
+		</section>
+		<section>
+		<h2 id="server-side">I want to add CORS support to my server</h2>
+		<p>Overview of implementing cors on the server</p>
+		<p>link to flow chart: http://www.html5rocks.com/en/tutorials/cors/#toc-cors-server-flowchart</p>
+		<p>Technology-specific pages for implementing CORS. Each of those pages should include information on how to add support for both standard CORS and preflight requests. One page for each supported technology, including:</p>
+		<ul>
+			<li>Apache</li>
+			<li>IIS6</li>
+			<li>IIS7</li>
+			<li>Virtuoso</li>
+			<li>ExpressJS</li>
+			<li>PHP</li>
+			<li>CGI Scripts</li>
+			<li>ASP.NET</li>
+			<li>App Engine</li>
+			<li>Other technologies</li>
+		</ul>
+		</section>
+		<section>
+		<h2 id="client-side">I want to use CORS from JavaScript</h2>
+		Overview of how to make CORS requests, including details about:
+		<ul>
+			<li><a href="http://caniuse.com/#feat=cors" title="Can I use... Support tables for HTML5, CSS3, etc">Browser support</a></li>
+			<li>Event handlers (though this is more XHR-related)</li>
+			<li>withCredentials</li>
+			<li>IE8/9 caveats</li>
+			<li>img.crossOrigin and CORS</li>
+			<li>One page for each specific technology describing how to make a CORS request:</li>
+			<li>CORS requests from raw JS</li>
+			<li>CORS requests from Chrome extensions</li>
+			<li>CORS requests from FF extensions (though last I checked FF extensions don’t include an Origin header)</li>
+			<li>jQuery</li>
+			<li>Other client libraries</li>
+		</ul>
+		</section>
+		<section>
+		<h2 id="deployment">Lists of APIs/Services/Datasets that support CORS</h2>
+		<p>TBD</p>
+		</section>
+		<section>
+		<h2 id="toolkits">Lists of CORS-enabled toolkits</h2>
+		<p>Libraries that help implement CORS</p>
+		</section>
+		<section>
+		<h2>Link to other resources about CORS (spec, tutorials, etc)</h2>
+		<p>TBD</p>
+		</section>
+		<section>
+		<h2>Who’s behind this</h2>
+		<p>Monsur Hossain and Michael Hausenblas</p>
+		</section>
+		<footer>
+			<p class="pull-right"><a href="#">Back to top</a></p>
+			<p>Last update on <span class="mute">2012-11-08</span> by <a href="http://mhausenblas.info/#i">Michael</a>.</p>
+		</footer>
+	</div>
+	
+	<script src="jquery.js"></script>
+	<script src="bootstrap/js/bootstrap.js"></script>
+	<script src="corsutil.js"></script>
+</body>
+</html>
