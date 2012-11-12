@@ -1,121 +1,358 @@
-<!DOCTYPE html>
-<html lang="en">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:xsd ="http://www.w3.org/2001/XMLSchema#"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:doap="http://usefulinc.com/ns/doap#"
+  xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#">
 <head>
-	<meta charset="utf-8">
 	<title>enable cross-origin resource sharing</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="CORS support site">
-	<meta name="author" content="Monsur Hossain">
-	<meta name="author" content="Michael Hausenblas">
-	<link href="bootstrap/css/bootstrap.css" rel="stylesheet">
-	<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
-	<link href="enable-cors.css" rel="stylesheet" />
-	<!--[if lt IE 9]>
-	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-	<![endif]-->
-	<link rel="shortcut icon" href="favicon.ico">
+	<link type="text/css" href="enable-cors.css" rel="stylesheet" />
+	<script type="text/javascript" src="jquery-1.4.2.min.js"></script>
+	<script type="text/javascript" src="corsutil.js"></script>
 </head>
+<body about="#this" typeof="doap:Project">
 
-<body>
-	<div class="container navbar-wrapper">
-		<div class="navbar navbar-inverse">
-			<div class="navbar-inner">
-				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-				</a>
-				<a class="brand" href="#">Enable CORS</a>
-				<div class="nav-collapse collapse">
-					<ul class="nav">
-						<li class="active"><a href="#">Home</a></li>
-						<li><a href="#server-side" title="I want to add CORS support to my server">Server</a></li>
-						<li><a href="#client-side" title="I want to use CORS from JavaScript">Client</a></li>
-						<li><a href="#deployment" title="Lists of APIs/Services/Datasets that support CORS">Deployment</a></li>
-						<li><a href="#toolkits" title="Lists of CORS-enabled toolkits">Toolkits</a></li>
-						<li><a href="http://client.cors-api.appspot.com/client" title="I want to test CORS capabilities" target="_blank">Test</a></li>
-						<li class="divider-vertical"></li>
-						<li><a href="https://github.com/mhausenblas/enable-cors.org/issues" target="_blank"><i class="icon-share-alt icon-white"></i> Suggest!</a></li>
-						<li><a href="https://groups.google.com/forum/?fromgroups#!forum/using-cors" target="_blank"><i class="icon-share-alt icon-white"></i> Discuss!</a></li>
-					</ul>
-				</div>
+	<div id="menu">
+		<a href="#what">What?</a> | <a href="#why">Why?</a> | <a href="#how">How?</a> | <a href="#who">Who?</a> | <a href="#check">Check!</a>
+	</div>
+	<div id="header">
+		<span class="enable">enable</span> cross-origin resource sharing
+		<span property="doap:name" content="enable cross-origin resource sharing (cors)"></span>
+	</div>
+
+	<div id="main">
+		<a id="what"></a><h2>What is this about?</h2>
+		<p>
+			Cross-Origin Resource Sharing (CORS) is a <a rel="rdfs:seeAlso" href="http://www.w3.org/TR/cors/">specification</a> that enables a truly open access across domain-boundaries. With this site we want to support the adoption of CORS.
+			<span class="more">[<a href="http://en.wikipedia.org/wiki/Cross-Origin_Resource_Sharing">more...</a>]</span>
+		</p>
+		<p>
+			If you have <strong>public content</strong> that doesn't use require cookie or session based authentication to see, then please consider opening it up for universal JavaScript/browser access.
+			<span class="more">[<a href="http://code.google.com/p/html5security/wiki/CrossOriginRequestSecurity">more...</a>]</span>
+		</p>
+
+		<a id="why"></a><h2>Why is CORS important?</h2>
+		<p>
+			It is vital for a number of use cases to be able to perform requests that go beyond a single domain.
+			Currently, this is not easily possible due to the same origin policy.
+			<span class="more">[<a href="http://en.wikipedia.org/wiki/Same_origin_policy">more...</a>]</span>
+		</p>
+		<p>
+			CORS defines how browsers and servers communicate when accessing sources across origins using HTTP headers to allow both the browser and the server to know enough about each other to determine if the request or response should succeed or fail.
+			<span class="more">[<a href="http://www.nczonline.net/blog/2010/05/25/cross-domain-ajax-with-cross-origin-resource-sharing/">more...</a>]</span>
+		</p>
+		<a id="how"></a><h2>How can I participate?</h2>
+
+			<div class="sect-menu shadow">
+				<a href="#how-apache">Apache</a> | <a href="#how-iis6">IIS6</a> | <a href="#how-iis7">IIS7</a> | <a href="#how-virtuoso">Virtuoso</a> | <a href="#how-expressJS">ExpressJS</a> | <a href="#how-php">PHP</a> | <a href="#how-cgi">CGI Scripts</a> | <a href="#how-asp.net">ASP.NET</a> | <a href="#how-gae">App Engine</a>
 			</div>
+
+			<p>
+				Granting JavaScript clients basic access to your resources simply requires adding one <a href="http://tools.ietf.org/html/rfc2616#section-6.2">HTTP response header</a>, namely:
+			</p>
+			<pre class="code">Access-Control-Allow-Origin: *
+Access-Control-Allow-Origin: http://foo.example.com
+</pre>
+			<p>
+				The asterisk permits scripts (or equivalent) hosted on any site to load and use your resources. A value gives access to a single one server. Instructions on this page are for the simple case of using an asterisk.
+			</p>
+			<p class="note">
+				Note: this is compatible with both <a href="http://www.w3.org/TR/XMLHttpRequest/">XMLHttpRequest</a> and <a href="http://msdn.microsoft.com/en-us/library/cc288060(VS.85).aspx">XDomainRequest</a> and <a href="http://www.w3.org/Security/wiki/Comparison_of_CORS_and_UM#CORS_2">supported by</a> all the major browsers.
+			</p>
+
+			<p class="note">
+				Note: it is also important that CORS headers are supplied in case of client errors (4xx) or server errors (5xx).
+				<span class="more">[<a href="http://esw.w3.org/Talk:CORS_Enabled">more...</a>]</span>
+			</p>
+
+			<a id="how-apache"></a><h3>For Apache</h3>
+			<p>
+				Apache can be configured to expose this header using <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>, this is enabled by default in Apache however you may want to ensure it's enabled by running the following command:
+			</p>
+			<pre class="code">a2enmod headers</pre>
+			<p>
+				To expose the header you simply add the following line inside <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections, or within a <code>.htaccess</code> file:
+			</p>
+			<pre class="code">Header set Access-Control-Allow-Origin *</pre>
+			<p class="note">
+				Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set. Eventually, you may need to reload Apache to make sure your changes are applied.
+			</p>
+
+			<a id="how-iis6"></a><h3>For IIS6</h3>
+			<p>
+				To CORS-enable Microsoft IIS6, perform the following steps:
+			</p>
+			<ol>
+				<li>Open <em>Internet Information Service (IIS)</em> Manager</li>
+				<li>Right click the site you want to enable CORS for and go to <em>Properties</em></li>
+				<li>Change to the <em>HTTP Headers</em> tab</li>
+				<li>In the <em>Custom HTTP headers</em> section, click <em>Add</em></li>
+				<li>Enter <code>Access-Control-Allow-Origin</code> as the header name</li>
+				<li>Enter <code>*</code> as the header value</li>
+				<li>Click <em>Ok</em> twice</li>
+			</ol>
+			<a id="how-iis7"></a><h3>For IIS7</h3>
+			<p>
+				For Microsoft IIS7, merge this into the <code>web.config</code> file at the root of your application or site:
+			</p>
+			<pre class="code">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;configuration&gt;
+ &lt;system.webServer&gt;
+   &lt;httpProtocol&gt;
+     &lt;customHeaders&gt;
+       &lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;*&quot; /&gt;
+     &lt;/customHeaders&gt;
+   &lt;/httpProtocol&gt;
+ &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+			<p class="note">
+				If you don't have a <code>web.config</code> file already, or don't know what one is, just create a new file called <code>web.config</code> containing the snippet above.
+			</p>
+
+			<a id="how-virtuoso"></a><h3>For Virtuoso</h3>
+			<p>
+				These instance/server-level settings require OpenLink <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSNews">Virtuoso Open Source (VOS) 6.1.3</a> or later, or <a href="http://download.openlinksw.com/virtwiz/">Virtuoso Commercial Edition 06.02.3129</a> or later.
+				<span class="more">[<a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksGuideCORSSetup">more...</a>]</span>
+			</p>
+			<ol>
+				<li>In the <em>Virtuoso Conductor</em>, go to <em>Web Application Server</em> &rarr; <em>Virtual Domains &amp; Directories</em>.</li>
+				<li>Expand the default <em>Interface</em> store.</li>
+				<li>Click <em>New Directory</em>.</li>
+				<li>Specify the desired <em>Virtual Directory Type</em>, or choose an existing virtual directory to use as a template.</li>
+				<li>Click <em>Next</em>.</li>
+				<li>Specify the <em>Directory Path</em> value.</li>
+				<li>Set the <em>CORS options</em>.
+					<ul>
+						<li><em>Cross-Origin Resource Sharing</em> - contains a single wildcard asterisk, i.e., <code>*</code> or an origin, such as <code>http://example.com:8080</code> or <code>http://foo.example.com</code>. Scripts are authorized to retrieve a resource if that resource either uses the wildcard or lists the origin of the script. For this example, enter the following single URI: <code><a href="http://demo.openlinksw.com">http://demo.openlinksw.com</a></code></li>
+						<li><em>Reject Unintended CORS</em> check-box - when ticked and the application does not overwrite headers, unmatched Origins will be rejected by sending an empty response.</li>
+					</ul>
+				</li>
+				<li>Click <em>Save changes</em>.</li>
+			</ol>
+			<p>
+			For older versions of Virtuoso, any of the Web Application-level instructions below may be used. Any Virtuoso-based application can implement CORS checking through well-known HTTP functions <a href="http://docs.openlinksw.com/virtuoso/fn_http_request_header.html">http_request_header()</a> and <a href="http://docs.openlinksw.com/virtuoso/fn_http_header.html">http_header()</a>, for example:
+			</p>
+			<pre class="code">&lt;?vsp
+IF (http_request_header (lines, 'Origin', NULL) = 'http://host.org')
+{
+  http_header ('Access-Control-Allow-Origin: http://host.org\r\n');
+}
+ELSE
+{
+  RETURN;
+}
+-- Additional code here ---
+?&gt;</pre>
+			<a id="how-expressJS"></a><h3>In ExpressJS</h3>
+			<p>
+				In your <a href="http://expressjs.com/">ExpressJS</a> app on <a href="http://nodejs.org/">node.js</a>, do the following with your routes:
+			</p>
+			<pre class="code">app.all('/', function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  next();
+ });
+
+app.get('/', function(req, res, next) {
+  // Handle the get for this route
+});
+
+app.post('/', function(req, res, next) {
+ // Handle the post for this route
+});</pre>
+			<a id="how-php"></a><h3>In PHP</h3>
+			<p>
+				If you don't have access to configure Apache, you can still send the header from a PHP script. It's a case of adding the following to your PHP scripts:
+			</p>
+			<pre class="code"> &lt;?php
+ header("Access-Control-Allow-Origin: *");</pre>
+			<p class="note">
+				Note: as with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, this must be before any output has been sent from the server.
+		 	</p>
+			<a id="how-cgi"></a><h3>In CGI Scripts</h3>
+			<p>
+				Just output the line:
+			</p>
+			<pre class="code">Access-Control-Allow-Origin: *</pre>
+			<p>
+				... as part of your CGI script's headers, for example, in Perl (using CGI.pm):
+			</p>
+			<pre class="code">print header(
+  -type => 'text/turtle',
+  -content_location => 'mydata.ttl',
+  -access_control_allow_origin => '*',
+);</pre>
+			<p>
+				or in Python:
+			</p>
+			<pre class="code">print "Content-Type: text/turtle"
+print "Content-Location: mydata.ttl"
+print "Access-Control-Allow-Origin: *"</pre>
+
+			<a id="how-asp.net"></a><h3>In ASP.NET</h3>
+			<p>
+				If you don't have access to configure IIS, you can still add the header through ASP.NET by adding the following line to your source pages:
+			</p>
+			<pre class="code">Response.AppendHeader("Access-Control-Allow-Origin", "*");</pre>
+			<p class="note">
+				Note: this approach is compatible with IIS6, IIS7 Classic Mode, and IIS7 Integrated Mode.
+			</p>
+
+			<a id="how-gae"></a><h3>In App Engine</h3>
+			<p>
+				For Python-based applications in Google <a href="http://code.google.com/appengine/">App Engine</a>, the <code>self.response.headers.add_header()</code> method can be used, such as:
+			</p>
+			<pre class="code">class CORSEnabledHandler(webapp.RequestHandler):
+  def get(self):
+    self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+    self.response.headers['Content-Type'] = 'text/csv'
+    self.response.out.write(self.dump_csv())</pre>
+
+		<a id="who"></a><h2>Who is doing it already?</h2>
+
+		<div class="sect-menu shadow">
+			<a href="#who-general">General</a> | <a href="#who-platforms">Platforms</a> | <a href="#who-services">Services</a> | <a href="#who-sparql_endpoints">SPARQL Endpoints</a> | <a href="#who-toolkits">Toolkits</a> | <a href="#who-data-sets">Datasets</a> | <a href="#who-vocabularies">Vocabularies</a>
 		</div>
-	</div>
- 	
-	<div class="container">
-		<div class="hero-unit">
-			<h1><span class="muted">enable</span> cross-origin resource sharing</h1>
-			<p>Cross-Origin Resource Sharing (CORS) is a <a href="http://www.w3.org/TR/cors/">specification</a> that enables a truly open access across domain-boundaries. With this site we want to support the adoption of CORS.</p>
-			<p class="help-block pull-right">[<a href="http://en.wikipedia.org/wiki/Cross-Origin_Resource_Sharing">more...</a>]</p>
+
+			<a id="who-general"></a><h3>General</h3>
+			<ul>
+				<li><a href="http://www.html5rocks.com">HTML5 Rocks</a>- A resource for open web HTML5 developers</li>
+				<li><a href="http://www.webkit.org/">WebKit</a>: as announced on the <a href="https://www.khronos.org/webgl/public-mailing-list/archives/1106/msg00042.html">WebGL mailing list</a>, CORS support for images and videos is now fully implemented</li>
+				<li>A <a href="http://jsrails.timeinc.net/j/com.ticommunity.comm.js">JS library</a> that is used on realsimple.com and other Time, Inc properties</li>
+			</ul>
+
+			<a id="who-platforms"></a><h3>Platforms</h3>
+			<ul>
+				<li><a href="http://ontowiki.net">OntoWiki</a> (<a href="http://code.google.com/p/ontowiki/wiki/WebServices#Cross-Origin_Resource_Sharing_(CORS)">plug-in documentation</a>)
+				</li>
+				<li><a href="http://esw.w3.org/VirtuosoUniversalServer">OpenLink Virtuoso</a></li>
+				<li><a href="http://www.w3.org/wiki/VirtuosoUniversalServer">OpenLink Virtuoso</a> (<a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSNews">Virtuoso Open Source (VOS) 6.1.3</a> and later, and <a href="http://download.openlinksw.com/virtwiz/" >Virtuoso Commercial Edition 06.02.3128</a> and later)</li>
+				<li>Talis Platform - coming soon</li>
+			</ul>
+
+			<a id="who-services"></a><h3>Services</h3>
+			<ul>
+				<li><a href="http://bqs-endpoint.appspot.com/about#bqe-api">BigQuery Endpoint API</a></li>
+				<li><a href="http://spotlight.dbpedia.org">DBpedia Spotlight</a></li>
+				<li><a href="http://opencalais.com/">Open Calais</a></li>
+				<li><a href="http://publishmydata.com/">publishmydata.com</a></li>
+				<li><a href="http://sameas.org/">sameas.org</a></li>
+				<li><a href="http://prefix.cc/">prefix.cc</a></li>
+				<li><a href="http://purl.org/">purl.org</a>
+					(see the <a href="http://groups.google.com/group/persistenturls/browse_thread/thread/d4c5d9880b4fb5fb">outstanding issue</a>)
+				</li>
+				<li>Uberblic - coming soon</li>
+				<li><a href="http://uriburner.com/">URIBurner</a></li>
+				<li><a href="http://zemanta.com/">Zemanta</a></li>
+			</ul>
+
+			<a id="who-sparql_endpoints"></a><h3>SPARQL Endpoints</h3>
+			<ul>
+				<li><a href="http://semantic.ckan.net/sparql">CKAN</a></li>
+				<li><a href="http://dbpedia.org/sparql">DBpedia</a> and <a href="http://dbpedia-live.openlinksw.com/sparql">DBpedia-live</a></li>
+				<li><a href="http://linkedopencommerce.com/sparql">Linked Open Commerce</a></li>
+				<li><a href="http://lod.openlinksw.com/sparql">LOD cloud cache</a></li>
+				<li><a href="http://linkeddata.uriburner.com/sparql">URIBurner</a></li>
+			</ul>
+
+			<a id="who-toolkits"></a><h3>Toolkits</h3>
+			<ul>
+				<li><a href="http://software.dzhuvinov.com/cors-filter.html">CORS Filter</a>, for Java Web applications</li>
+				<li><a href="http://search.cpan.org/dist/RDF-LinkedData/">RDF::LinkedData</a> version 0.16 and later</li>
+			</ul>
+
+			<a id="who-data-sets"></a><h3>Datasets</h3>
+			<ul>
+				<li><a href="http://semantic.eurobau.com/">BauDataWeb</a></li>
+				<li><a href="http://bibliographica.org/">bibliographica</a>, a catalogue of cultural works</li>
+				<li><a href="http://catalogue.data.gov.uk/api">catalogue.data.gov.uk</a></li>
+				<li><a href="http://ckan.net/">Comprehensive Knowledge Archive Network (CKAN)</a></li>
+				<li><a href="http://data-gov.tw.rpi.edu/wiki/Data.gov_Catalog_-_Complete">data.gov</a> and
+					<a href="http://logd.tw.rpi.edu/source/data-gov/">the new home of data.gov data</a>
+				</li>
+				<li><a href="http://dbpedia.org/">DBpedia</a> and <a href="http://dbpedia-live.openlinksw.com/">DBpedia-live</a></li>
+				<li>DIG/CSAIL - coming soon</li>
+				<li><a href="http://geonames.org/">GeoNames</a></li>
+				<li><a href="http://productdb.org/">productdb.org</a></li>
+				<li><a href="http://rkbexplorer.com/">*.rkbexplorer.com</a>, which includes various data sets</li>
+				<li><a href="http://data.semanticweb.org/">Semantic Web Dog Food</a></li>
+			</ul>
+
+			<a id="who-vocabularies"></a><h3>Vocabularies</h3>
+			<ul>
+				<li><a href="http://buzzword.org.uk/">buzzword.org.uk</a></li>
+				<li><a href="http://xmlns.com/foaf/spec/">FOAF</a></li>
+				<li><a href="http://www.freeclass.eu/freeclass_v1">FreeClassOWL</a></li>
+				<li><a href="http://purl.org/goodrelations/v1">GoodRelations (GR)</a></li>
+				<li><a href="http://rdfs.org">rdfs.org</a>, which includes SIOC, Resume-RDF and Likedis</li>
+				<li><a href="http://ontologi.es">ontologi.es</a> and <a href="http://wiki.ontologi.es">wiki.ontologi.es</a></li>
+				<li><a href="http://purl.org/vso/ns">Vehicle Sales Ontology (VSO)</a></li>
+				<li><a href="http://vocab.deri.ie">vocab.deri.ie</a></li>
+				<li>W3C vocabularies - coming soon</li>
+			</ul>
+		<a id="check"></a><h2>Check CORS support</h2>
+		<div>
+			<input type="text" size="40" id="targetsite" value="http://ckan.net/" />
+			<button id="checkcors">Is this a CORS-enabled site?</button>
+			<div id="result"></div>
 		</div>
+		<p>
+			There are other tools and services available that allow to check for CORS support, including:
+		</p>
+		<ul>
+			<li>
+				CORS Check - <a href="http://river.styx.org/ww/2010/10/corscheck">HTTP Header Logs for Linked Open Data</a>
+				<span class="example">[<a href="http://bit.ly/cHvMMY">example</a>]</span>
+				</li>
+			<li>
+				<a href="http://redbot.org/">REDbot</a> - a generic, very flexible tool (including <a href="http://www.softwareishard.com/blog/firebug/http-archive-specification/">HAR</a> support and much more).
+				<span class="example">[<a href="http://redbot.org/?uri=http%3A%2F%2Frdfs.org%2F&amp;req_hdr=Origin%3Ahttp%3A%2F%2Fexample.com">example</a>]</span>
+			</li>
+		</ul>
 	</div>
 
-	<div class="container">
-		<section>
-			<h2>What is this about?</h2>
-			<p>Introduction to CORS</p>
-			<p>Why is CORS important</p>
-		</section>
-		<section>
-		<h2 id="server-side">I want to add CORS support to my server</h2>
-		<p>Overview of implementing cors on the server</p>
-		<p>link to flow chart: http://www.html5rocks.com/en/tutorials/cors/#toc-cors-server-flowchart</p>
-		<p>Technology-specific pages for implementing CORS. Each of those pages should include information on how to add support for both standard CORS and preflight requests. One page for each supported technology, including:</p>
+	<div id="about">
+		<a id="by"></a><h2>Who is behind this?</h2>
+		<p>
+			A group of people who care about open access across all boundaries: essentially, if you contribute to the <a href="http://esw.w3.org/CORS_Enabled">ESW Wiki page</a> that serves as an input for this site, you're as well listed here:
+		</p>
 		<ul>
-			<li>Apache</li>
-			<li>IIS6</li>
-			<li>IIS7</li>
-			<li>Virtuoso</li>
-			<li>ExpressJS</li>
-			<li>PHP</li>
-			<li>CGI Scripts</li>
-			<li>ASP.NET</li>
-			<li>App Engine</li>
-			<li>Other technologies</li>
+			<li><a rel="doap:helper" href="http://www.kjetil.kjernsmo.net/foaf.rdf#me">Kjetil</a></li>
+			<li><a rel="doap:maintainer" href="http://webr3.org/nathan#me">Nathan</a></li>
+			<li><a rel="doap:helper"  href="http://knoesis.wright.edu/students/pablo/#me">Pablo</a></li>
+			<li><a rel="doap:helper" href="http://paulirish.com/">Paul</a></li>
+			<li><a rel="doap:helper" href="http://about.me/tanepiper">Tane</a></li>
+			<li><a rel="doap:helper" href="http://tath.am/About.htm">Tatham</a></li>
+			<li><a rel="doap:helper" href="http://id.myopenlink.net/dataspace/person/tthibodeau#this">Ted</a></li>
+			<li><a rel="doap:helper" href="http://foaf.me/wwaites#me">William</a></li>
+			<li><a rel="doap:maintainer" href="http://sw-app.org/mic.xhtml#i">Michael</a> <span style="font-size:120%">&larr;</span> <span style="font-size:80%">contact this chap if you wanna complain about this site or it takes too long that stuff gets updated, here ;)</span></li>
 		</ul>
-		</section>
-		<section>
-		<h2 id="client-side">I want to use CORS from JavaScript</h2>
-		Overview of how to make CORS requests, including details about:
+		<p>
+			If you want to discuss issues around CORS or have an idea what else we could do to enable CORS throughout the Web, please have a look a the following mailing lists:
+		</p>
 		<ul>
-			<li><a href="http://caniuse.com/#feat=cors" title="Can I use... Support tables for HTML5, CSS3, etc">Browser support</a></li>
-			<li>Event handlers (though this is more XHR-related)</li>
-			<li>withCredentials</li>
-			<li>IE8/9 caveats</li>
-			<li>img.crossOrigin and CORS</li>
-			<li>One page for each specific technology describing how to make a CORS request:</li>
-			<li>CORS requests from raw JS</li>
-			<li>CORS requests from Chrome extensions</li>
-			<li>CORS requests from FF extensions (though last I checked FF extensions don’t include an Origin header)</li>
-			<li>jQuery</li>
-			<li>Other client libraries</li>
+			<li>
+				<a href="http://lists.w3.org/Archives/Public/public-webapps/">public-webapps@w3.org</a> for general-purpose discussions and technical details regarding CORS, and
+			</li>
+			<li>
+				<a href="http://lists.w3.org/Archives/Public/public-lod/">public-lod@w3.org</a> for Linked Data specific discussions.
+			</li>
 		</ul>
-		</section>
-		<section>
-		<h2 id="deployment">Lists of APIs/Services/Datasets that support CORS</h2>
-		<p>TBD</p>
-		</section>
-		<section>
-		<h2 id="toolkits">Lists of CORS-enabled toolkits</h2>
-		<p>Libraries that help implement CORS</p>
-		</section>
-		<section>
-		<h2>Link to other resources about CORS (spec, tutorials, etc)</h2>
-		<p>TBD</p>
-		</section>
-		<section>
-		<h2>Who’s behind this</h2>
-		<p>Monsur Hossain and Michael Hausenblas</p>
-		</section>
-		<footer>
-			<p class="pull-right"><a href="#">Back to top</a></p>
-			<p>Last update on <span class="mute">2012-11-08</span> by <a href="http://mhausenblas.info/#i">Michael</a>.</p>
-		</footer>
 	</div>
-	
-	<script src="jquery.js"></script>
-	<script src="bootstrap/js/bootstrap.js"></script>
-	<script src="corsutil.js"></script>
+
+	<div id="footer" about="">
+		<span>
+			Last update on <span property="dcterms:date" datatype="xsd:date">2012-11-12</span> by <a rel="dcterms:creator" href="http://sw-app.org/mic.xhtml#i">Michael</a>.
+		</span>
+		<span>
+			Valid <a href="http://validator.w3.org/check?uri=referer" rel="dcterms:conformsTo" resource="http://www.w3.org/TR/rdfa-syntax">XHTML + RDFa</a>.
+		</span>
+	</div>
 </body>
 </html>
