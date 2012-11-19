@@ -1,6 +1,9 @@
 var getPageName = function(pathname) {
   if (pathname) {
-    pathname = pathname.substring(pathname.lastIndexOf('/') + 1)
+    pathname = pathname.substring(pathname.lastIndexOf('/') + 1);
+    if (pathname && pathname.indexOf('server_') === 0) {
+      pathname = 'server.html';
+    }
   }
   return pathname || 'index.html';
 };
