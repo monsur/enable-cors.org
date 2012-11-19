@@ -1,0 +1,29 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on IIS7</h1>
+
+<p>
+				For Microsoft IIS7, merge this into the <code>web.config</code> file at the root of your application or site:
+			</p>
+			<pre class="code">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;configuration&gt;
+ &lt;system.webServer&gt;
+   &lt;httpProtocol&gt;
+     &lt;customHeaders&gt;
+       &lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;*&quot; /&gt;
+     &lt;/customHeaders&gt;
+   &lt;/httpProtocol&gt;
+ &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+			<p class="note">
+				If you don't have a <code>web.config</code> file already, or don't know what one is, just create a new file called <code>web.config</code> containing the snippet above.
+			</p>
+
+		</section>
+	</div>
+

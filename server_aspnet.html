@@ -1,0 +1,20 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on ASP.NET</h1>
+
+<p>
+				If you don't have access to configure IIS, you can still add the header through ASP.NET by adding the following line to your source pages:
+			</p>
+			<pre class="code">Response.AppendHeader("Access-Control-Allow-Origin", "*");</pre>
+			<p class="note">
+				Note: this approach is compatible with IIS6, IIS7 Classic Mode, and IIS7 Integrated Mode.
+			</p>
+
+		</section>
+	</div>
+

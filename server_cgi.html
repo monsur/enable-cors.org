@@ -1,0 +1,31 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS in CGI Scripts</h1>
+
+<p>
+				Just output the line:
+			</p>
+			<pre class="code">Access-Control-Allow-Origin: *</pre>
+			<p>
+				... as part of your CGI script's headers, for example, in Perl (using CGI.pm):
+			</p>
+			<pre class="code">print header(
+  -type => 'text/turtle',
+  -content_location => 'mydata.ttl',
+  -access_control_allow_origin => '*',
+);</pre>
+			<p>
+				or in Python:
+			</p>
+			<pre class="code">print "Content-Type: text/turtle"
+print "Content-Location: mydata.ttl"
+print "Access-Control-Allow-Origin: *"</pre>
+
+		</section>
+	</div>
+

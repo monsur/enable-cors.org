@@ -1,0 +1,21 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on App Engine</h1>
+
+<p>
+				For Python-based applications in Google <a href="http://code.google.com/appengine/">App Engine</a>, the <code>self.response.headers.add_header()</code> method can be used, such as:
+			</p>
+			<pre class="code">class CORSEnabledHandler(webapp.RequestHandler):
+  def get(self):
+    self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+    self.response.headers['Content-Type'] = 'text/csv'
+    self.response.out.write(self.dump_csv())</pre>
+
+		</section>
+	</div>
+

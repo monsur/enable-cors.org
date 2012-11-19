@@ -1,0 +1,25 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on IIS6</h1>
+
+<p>
+				To CORS-enable Microsoft IIS6, perform the following steps:
+			</p>
+			<ol>
+				<li>Open <em>Internet Information Service (IIS)</em> Manager</li>
+				<li>Right click the site you want to enable CORS for and go to <em>Properties</em></li>
+				<li>Change to the <em>HTTP Headers</em> tab</li>
+				<li>In the <em>Custom HTTP headers</em> section, click <em>Add</em></li>
+				<li>Enter <code>Access-Control-Allow-Origin</code> as the header name</li>
+				<li>Enter <code>*</code> as the header value</li>
+				<li>Click <em>Ok</em> twice</li>
+			</ol>
+
+		</section>
+	</div>
+

@@ -1,0 +1,46 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on Virtuoso</h1>
+
+<p>
+				These instance/server-level settings require OpenLink <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSNews">Virtuoso Open Source (VOS) 6.1.3</a> or later, or <a href="http://download.openlinksw.com/virtwiz/">Virtuoso Commercial Edition 06.02.3129</a> or later.
+				<span class="more">[<a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksGuideCORSSetup">more...</a>]</span>
+			</p>
+			<ol>
+				<li>In the <em>Virtuoso Conductor</em>, go to <em>Web Application Server</em> &rarr; <em>Virtual Domains &amp; Directories</em>.</li>
+				<li>Expand the default <em>Interface</em> store.</li>
+				<li>Click <em>New Directory</em>.</li>
+				<li>Specify the desired <em>Virtual Directory Type</em>, or choose an existing virtual directory to use as a template.</li>
+				<li>Click <em>Next</em>.</li>
+				<li>Specify the <em>Directory Path</em> value.</li>
+				<li>Set the <em>CORS options</em>.
+					<ul>
+						<li><em>Cross-Origin Resource Sharing</em> - contains a single wildcard asterisk, i.e., <code>*</code> or an origin, such as <code>http://example.com:8080</code> or <code>http://foo.example.com</code>. Scripts are authorized to retrieve a resource if that resource either uses the wildcard or lists the origin of the script. For this example, enter the following single URI: <code><a href="http://demo.openlinksw.com">http://demo.openlinksw.com</a></code></li>
+						<li><em>Reject Unintended CORS</em> check-box - when ticked and the application does not overwrite headers, unmatched Origins will be rejected by sending an empty response.</li>
+					</ul>
+				</li>
+				<li>Click <em>Save changes</em>.</li>
+			</ol>
+			<p>
+			For older versions of Virtuoso, any of the Web Application-level instructions below may be used. Any Virtuoso-based application can implement CORS checking through well-known HTTP functions <a href="http://docs.openlinksw.com/virtuoso/fn_http_request_header.html">http_request_header()</a> and <a href="http://docs.openlinksw.com/virtuoso/fn_http_header.html">http_header()</a>, for example:
+			</p>
+			<pre class="code">&lt;?vsp
+IF (http_request_header (lines, 'Origin', NULL) = 'http://host.org')
+{
+  http_header ('Access-Control-Allow-Origin: http://host.org\r\n');
+}
+ELSE
+{
+  RETURN;
+}
+-- Additional code here ---
+?&gt;</pre>
+
+		</section>
+	</div>
+

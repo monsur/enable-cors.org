@@ -1,0 +1,21 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on PHP</h1>
+
+<p>
+				If you don't have access to configure Apache, you can still send the header from a PHP script. It's a case of adding the following to your PHP scripts:
+			</p>
+			<pre class="code"> &lt;?php
+ header("Access-Control-Allow-Origin: *");</pre>
+			<p class="note">
+				Note: as with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, this must be before any output has been sent from the server.
+		 	</p>
+
+		</section>
+	</div>
+
