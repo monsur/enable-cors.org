@@ -29,8 +29,8 @@
 				<div class="nav-collapse collapse">
 					<ul class="nav">
 						<li><a href="index.html">Home</a></li>
-						<li class="active"><a href="server.html" title="I want to add CORS support to my server">Server</a></li>
-						<li><a href="client.html" title="I want to use CORS from JavaScript">Client</a></li>
+						<li><a href="server.html" title="I want to add CORS support to my server">Server</a></li>
+						<li class="active"><a href="client.html" title="I want to use CORS from JavaScript">Client</a></li>
 						<li><a href="resources" title="More resources">Resources</a></li>
 						<li><a href="http://test-cors.org" title="I want to test CORS capabilities" target="_blank">Test</a></li>
 						<li class="divider-vertical"></li>
@@ -44,28 +44,20 @@
 
 	<div class="container">
 		<section>
-		<h2 id="server-side">I want to add CORS support to my server</h2>
-
-		<p>For simple CORS requests, the server only needs to add the following header to its response:</p>
-
-		<p><code>Access-Control-Allow-Origin: *</code></p>
-
-		<p>There are some more headers and settings involved if you want to support verbs other than GET/POST, custom headers, or authentication. You can learn more about these options in the <a href="http://www.html5rocks.com/en/tutorials/cors/">Using CORS</a> tutorial on HTML5 Rocks.<p>
-
-		<p>If you want the TL;DR version, take a look at the <a href="http://www.html5rocks.com/static/images/cors_server_flowchart.png">flowchart for implementing CORS support</a>.</p>
-
-		<p>If you'd like to learn more about implementing CORS for a specific platform, follow one of the links below:</p>
+		<h2 id="client-side">I want to use CORS from JavaScript</h2>
+		Overview of how to make CORS requests, including details about:
 		<ul>
-			<li>Apache</li>
-			<li>IIS6</li>
-			<li>IIS7</li>
-			<li>Virtuoso</li>
-			<li>ExpressJS</li>
-			<li>PHP</li>
-			<li>CGI Scripts</li>
-			<li>ASP.NET</li>
-			<li>App Engine</li>
-			<li>Other technologies</li>
+			<li><a href="http://caniuse.com/#feat=cors" title="Can I use... Support tables for HTML5, CSS3, etc">Browser support</a></li>
+			<li>Event handlers (though this is more XHR-related)</li>
+			<li>withCredentials</li>
+			<li>IE8/9 caveats</li>
+			<li>img.crossOrigin and CORS</li>
+			<li>One page for each specific technology describing how to make a CORS request:</li>
+			<li>CORS requests from raw JS</li>
+			<li>CORS requests from Chrome extensions</li>
+			<li>CORS requests from FF extensions (though last I checked FF extensions don’t include an Origin header)</li>
+			<li>jQuery</li>
+			<li>Other client libraries</li>
 		</ul>
 		</section>
 
