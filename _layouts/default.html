@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>{{ page.title }}</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="CORS support site">
+	<meta name="author" content="Monsur Hossain">
+	<meta name="author" content="Michael Hausenblas">
+	<link href="css/bootstrap-2.2.1.css" rel="stylesheet">
+	<link href="css/bootstrap-responsive-2.2.1.css" rel="stylesheet">
+	<link href="css/enable-cors.css" rel="stylesheet" />
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link rel="shortcut icon" href="favicon.ico">
+</head>
+
+<body>
+	<div class="container navbar-wrapper">
+		<div class="navbar navbar-inverse">
+			<div class="navbar-inner">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="index.html">Enable CORS</a>
+				<div class="nav-collapse collapse">
+					<ul class="nav">
+						<li class="active"><a href="index.html">Home</a></li>
+						<li><a href="server.html" title="I want to add CORS support to my server">Server</a></li>
+						<li><a href="client.html" title="I want to use CORS from JavaScript">Client</a></li>
+						<li><a href="resources.html" title="More resources">Resources</a></li>
+						<li><a href="http://test-cors.org" title="I want to test CORS capabilities" target="_blank">Test</a></li>
+						<li class="divider-vertical"></li>
+						<li><a href="https://github.com/mhausenblas/enable-cors.org/issues" target="_blank"><i class="icon-share-alt icon-white"></i> Suggest!</a></li>
+						<li><a href="https://groups.google.com/forum/?fromgroups#!forum/using-cors" target="_blank"><i class="icon-share-alt icon-white"></i> Discuss!</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+{{content}}
+
+
+	<div class="container">
+		<div class="span5">
+		<h2>Who’s behind this</h2>
+		<p>Monsur Hossain and Michael Hausenblas</p>
+		</div>
+
+		<div class="span5">
+		<h2>Contribute</h2>
+		<p>The content on this site stays fresh thanks to help from users like you! If you have suggestions or would like to contribute, <a href="https://github.com/mhausenblas/enable-cors.org">fork us on GitHub</a>.</p>
+		</div>
+	</div>
+
+	<div class="container">
+		<footer>
+			<p class="pull-right"><a href="#">Back to top</a></p>
+			<p>Last update on <span class="mute">2012-11-08</span> by <a href="http://mhausenblas.info/#i">Michael</a>.</p>
+		</footer>
+	</div>
+	<script src="js/jquery-1.8.3.min.js"></script>
+	<script src="js/bootstrap-2.2.1.js"></script>
+	<script src="js/corsutil.js"></script>
+</body>
+</html>
