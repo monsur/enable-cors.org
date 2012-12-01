@@ -14,7 +14,7 @@ title: enable cross-origin resource sharing
 			<p>
 				To expose the header you simply add the following line inside <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections, or within a <code>.htaccess</code> file:
 			</p>
-			<pre class="code">Header set Access-Control-Allow-Origin *</pre>
+			<pre class="code">Header set Access-Control-Allow-Origin "*"</pre>
 			<p class="note">
 				Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set. Eventually, you may need to reload Apache to make sure your changes are applied.
 			</p>
