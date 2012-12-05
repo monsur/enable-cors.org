@@ -7,7 +7,7 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on App Engine</h1>
 
-<p>
+			<p>
 				For Python-based applications in Google <a href="http://code.google.com/appengine/">App Engine</a>, the <code>self.response.headers.add_header()</code> method can be used, such as:
 			</p>
 			<pre class="code">class CORSEnabledHandler(webapp.RequestHandler):
@@ -16,6 +16,24 @@ title: enable cross-origin resource sharing
     self.response.headers['Content-Type'] = 'text/csv'
     self.response.out.write(self.dump_csv())</pre>
 
-		</section>
+			<p>
+				For Java-based applications, use <code>resp.addHeader()</code>:
+			</p>
+			<pre class="code">public void doGet(HttpServletRequest req, HttpServletResponse resp) {
+  resp.addHeader("Access-Control-Allow-Origin", "*");
+  resp.addHeader("Content-Type", "text/csv");
+  resp.getWriter().append(csvString);
+}</pre>
+                        
+                        <p>
+                        	And for Go-based applications, use <code>w.Header().Add()</code>:
+                        </p>
+                        <pre class="code">func doGet(w http.ResponseWriter, r *http.Request) {
+  w.Header().Add("Access-Control-Allow-Origin", "*")
+  w.Header().Add("Content-Type", "text/csv")
+  fmt.Fprintf(w, csvData)
+}</pre>
+		</section>	
+		
 	</div>
 
