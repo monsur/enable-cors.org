@@ -1,0 +1,25 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS in Perl PSGI scripts</h1>
+
+<p>The module <a
+href="https://metacpan.org/module/Plack::Middleware::CrossOrigin">Plack::Middleware::CrossOrigin</a>
+provides a complete CORS server side implementation. To allow any
+request from any location, just add this to your builder:
+</p>
+
+<pre class="code">
+    enable 'CrossOrigin', origins => '*';
+</pre>
+
+<p>This module is also available in Debian and Ubuntu as libplack-middleware-crossorigin-perl.</p>
+
+<p>For other Perl-related uses see <a href="server_cgi.html">the CGI page</a>.</p>	
+</section>
+</div>
+
