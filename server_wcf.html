@@ -7,7 +7,7 @@ title: enable cross-origin resource sharing
     <section>
         <h1>CORS on WCF</h1>
         <p>
-            For WCF service you have to develop new behavior and include it in enpoint configuration:
+            For WCF service you have to develop new behavior and include it in the enpoint configuration:
         </p>
         <h5>Create Message Inspector</h5>
         <pre class="code">
@@ -78,19 +78,19 @@ title: enable cross-origin resource sharing
         <h5>Register new behavior in web.config</h5>
         <pre class="code">
             &lt;extensions&gt;
-      &lt;behaviorExtensions&gt;        
-        &lt;add name=&quot;crossOriginResourceSharingBehavior&quot; type=&quot;Services.Behaviours.EnableCrossOriginResourceSharingBehavior, Services, Version=1.0.0.0, Culture=neutral&quot; /&gt;        
-      &lt;/behaviorExtensions&gt;      
-    &lt;/extensions&gt;
+              &lt;behaviorExtensions&gt;        
+                &lt;add name=&quot;crossOriginResourceSharingBehavior&quot; type=&quot;Services.Behaviours.EnableCrossOriginResourceSharingBehavior, Services, Version=1.0.0.0, Culture=neutral&quot; /&gt;        
+              &lt;/behaviorExtensions&gt;      
+            &lt;/extensions&gt;
         </pre>
         <h5>Add new behavior to endpoint behavior configuration</h5>
         <pre class="code">
             &lt;endpointBehaviors&gt;      
-        &lt;behavior name=&quot;jsonBehavior&quot;&gt;
-          &lt;webHttp /&gt;
-          &lt;crossOriginResourceSharingBehavior /&gt;
-        &lt;/behavior&gt;
-      &lt;/endpointBehaviors&gt;
+            &lt;behavior name=&quot;jsonBehavior&quot;&gt;
+                &lt;webHttp /&gt;
+                &lt;crossOriginResourceSharingBehavior /&gt;
+            &lt;/behavior&gt;
+            &lt;/endpointBehaviors&gt;
         </pre>
         <h5>Configure endpoint</h5>
         <pre class="code">
