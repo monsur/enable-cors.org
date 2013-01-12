@@ -1,0 +1,100 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+<div class="container">
+    <section>
+        <h1>CORS on WCF</h1>
+        <p>
+            For WCF service you have to develop new behavior and include it in enpoint configuration:
+        </p>
+        <h5>Create Message Inspector</h5>
+        <pre class="code">
+             public class CustomHeaderMessageInspector : IDispatchMessageInspector
+            {
+                Dictionary<string, string> requiredHeaders;
+                public CustomHeaderMessageInspector (Dictionary<string, string> headers)
+                {
+                    requiredHeaders = headers ?? new Dictionary<string, string>();
+                }
+
+                public object AfterReceiveRequest(ref System.ServiceModel.Channels.Message request, System.ServiceModel.IClientChannel channel, System.ServiceModel.InstanceContext instanceContext)
+                {
+                    return null;
+                }
+
+                public void BeforeSendReply(ref System.ServiceModel.Channels.Message reply, object correlationState)
+                {
+                    var httpHeader = reply.Properties["httpResponse"] as HttpResponseMessageProperty;
+                    foreach (var item in requiredHeaders)
+                    {
+                        httpHeader.Headers.Add(item.Key, item.Value);
+                    }           
+                }
+            }
+        </pre>
+        <h5>Create Endpoint Behavior and use Message Inspector to add headers</h5>
+        <pre class="code">
+             public class EnableCrossOriginResourceSharingBehavior : BehaviorExtensionElement, IEndpointBehavior
+            {
+                public void AddBindingParameters(ServiceEndpoint endpoint, System.ServiceModel.Channels.BindingParameterCollection bindingParameters)
+                {
+           
+                }
+
+                public void ApplyClientBehavior(ServiceEndpoint endpoint, System.ServiceModel.Dispatcher.ClientRuntime clientRuntime)
+                {
+            
+                }
+
+                public void ApplyDispatchBehavior(ServiceEndpoint endpoint, System.ServiceModel.Dispatcher.EndpointDispatcher endpointDispatcher)
+                {
+                    var requiredHeaders = new Dictionary<string, string>();
+
+                    requiredHeaders.Add("Access-Control-Allow-Origin", "*");
+                    requiredHeaders.Add("Access-Control-Request-Method", "POST,GET,PUT,DELETE,OPTIONS");
+                    requiredHeaders.Add("Access-Control-Allow-Headers", "X-Requested-With,Content-Type");
+
+                    endpointDispatcher.DispatchRuntime.MessageInspectors.Add(new CustomHeaderMessageInspector(requiredHeaders));
+                }
+
+                public void Validate(ServiceEndpoint endpoint)
+                {
+            
+                }
+
+                public override Type BehaviorType
+                {
+                    get { return typeof(EnableCrossOriginResourceSharingBehavior); }
+                }
+
+                protected override object CreateBehavior()
+                {
+                    return new EnableCrossOriginResourceSharingBehavior();
+                }
+            }
+        </pre>
+        <h5>Register new behavior in web.config</h5>
+        <pre class="code">
+            &lt;extensions&gt;
+      &lt;behaviorExtensions&gt;        
+        &lt;add name=&quot;crossOriginResourceSharingBehavior&quot; type=&quot;Services.Behaviours.EnableCrossOriginResourceSharingBehavior, Services, Version=1.0.0.0, Culture=neutral&quot; /&gt;        
+      &lt;/behaviorExtensions&gt;      
+    &lt;/extensions&gt;
+        </pre>
+        <h5>Add new behavior to endpoint behavior configuration</h5>
+        <pre class="code">
+            &lt;endpointBehaviors&gt;      
+        &lt;behavior name=&quot;jsonBehavior&quot;&gt;
+          &lt;webHttp /&gt;
+          &lt;crossOriginResourceSharingBehavior /&gt;
+        &lt;/behavior&gt;
+      &lt;/endpointBehaviors&gt;
+        </pre>
+        <h5>Configure endpoint</h5>
+        <pre class="code">
+            &lt;endpoint address=&quot;api&quot; binding=&quot;webHttpBinding&quot; behaviorConfiguration=&quot;jsonBehavior&quot; contract=&quot;Service.IServiceContract&quot; /&gt;
+        </pre>
+    </section>
+</div>
