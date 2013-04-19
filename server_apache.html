@@ -12,7 +12,7 @@ title: enable cross-origin resource sharing
 			</p>
 			<pre class="code">a2enmod headers</pre>
 			<p>
-				To expose the header you simply add the following line inside <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections, or within a <code>.htaccess</code> file:
+				To expose the header, you simply add the following line inside either the <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your server config (usually located in a *.conf file, such as httpd.conf or apache.conf), or within a <code>.htaccess</code> file:
 			</p>
 			<pre class="code">Header set Access-Control-Allow-Origin "*"</pre>
 			<p class="note">
