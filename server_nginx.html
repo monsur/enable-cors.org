@@ -1,0 +1,258 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+<div class="container">
+  <section>
+    <h1>CORS on Nginx</h1>
+    
+    <p>The following Nginx configuration enables CORS, with support
+      for preflight requests, using a regular expression to define a
+      whitelist of allowed origins, and various default values that
+      may be needed to workaround incorrect browser
+      implementations.</p>
+
+    <pre class="code">
+#
+# A CORS (Cross-Origin Resouce Sharing) config for nginx
+#
+# == Purpose
+#
+# This nginx configuration enables CORS requests in the following way:
+# - enables CORS just for origins on a whitelist specified by a regular expression
+# - CORS preflight request (OPTIONS) are responded immediately
+# - Access-Control-Allow-Credentials=true for GET and POST requests
+# - Access-Control-Max-Age=20days, to minimize repetitive OPTIONS requests
+# - various superluous settings to accommodate nonconformant browsers
+#
+# == Comment on echoing Access-Control-Allow-Origin
+# 
+# How do you allow CORS requests only from certain domains? The last
+# published W3C candidate recommendation states that the
+# Access-Control-Allow-Origin header can include a list of origins.
+# (See: http://www.w3.org/TR/2013/CR-cors-20130129/#access-control-allow-origin-response-header )
+# However, browsers do not support this well and it likely will be
+# dropped from the spec (see, http://www.rfc-editor.org/errata_search.php?rfc=6454&eid=3249 ).
+# 
+# The usual workaround is for the server to keep a whitelist of
+# acceptable origins (as a regular expression), match the request's
+# Origin header against the list, and echo back the matched value.
+#
+# (Yes you can use '*' to accept all origins but this is too open and
+# prevents using 'Access-Control-Allow-Credentials: true', which is
+# needed for HTTP Basic Access authentication.)
+#
+# == Comment on  spec
+#
+# Comments below are all based on my reading of the CORS spec as of
+# 2013-Jan-29 ( http://www.w3.org/TR/2013/CR-cors-20130129/ ), the
+# XMLHttpRequest spec (
+# http://www.w3.org/TR/2012/WD-XMLHttpRequest-20121206/ ), and
+# experimentation with latest versions of Firefox, Chrome, Safari at
+# that point in time.
+#
+# == Changelog
+#
+# shared at: https://gist.github.com/algal/5480916
+# based on: https://gist.github.com/alexjs/4165271
+#
+
+location / {
+
+    # if the request included an Origin: header with an origin on the whitelist,
+    # then it is some kind of CORS request.
+
+    # specifically, this example allow CORS requests from
+    #  scheme    : http or https
+    #  authority : any authority ending in ".mckinsey.com"
+    #  port      : nothing, or :<any_number>
+    if ($http_origin ~* (https?://.*\.mckinsey\.com(:[0-9]+)?)) {
+        set $cors "true";
+    }
+
+    # Nginx doesn't support nested If statements, so we use string
+    # concatenation to create a flag for compound conditions
+
+    # OPTIONS indicates a CORS pre-flight request
+    if ($request_method = 'OPTIONS') {
+        set $cors "${cors}options";  
+    }
+
+    # non-OPTIONS indicates a normal CORS request
+    if ($request_method = 'GET') {
+        set $cors "${cors}get";  
+    }
+    if ($request_method = 'POST') {
+        set $cors "${cors}post";
+    }
+
+    # if it's a GET or POST, set the standard CORS responses header
+    if ($cors = "trueget") {
+        # Tells the browser this origin may make cross-origin requests
+        # (Here, we echo the requesting origin, which matched the whitelist.)
+        add_header 'Access-Control-Allow-Origin' "$http_origin";
+        # Tells the browser it may show the response, when XmlHttpRequest.withCredentials=true.
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        # # Tell the browser which response headers the JS can see, besides the "simple response headers"
+        # add_header 'Access-Control-Expose-Headers' 'myresponseheader';
+    }
+
+    if ($cors = "truepost") {
+        # Tells the browser this origin may make cross-origin requests
+        # (Here, we echo the requesting origin, which matched the whitelist.)
+        add_header 'Access-Control-Allow-Origin' "$http_origin";
+        # Tells the browser it may show the response, when XmlHttpRequest.withCredentials=true.
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        # # Tell the browser which response headers the JS can see, besides the "simple response headers"
+        # add_header 'Access-Control-Expose-Headers' 'myresponseheader';
+    }
+
+    # if it's OPTIONS, then it's a CORS preflight request so respond immediately with no response body
+    if ($cors = "trueoptions") {
+        # Tells the browser this origin may make cross-origin requests
+        # (Here, we echo the requesting origin, which matched the whitelist.)
+        add_header 'Access-Control-Allow-Origin' "$http_origin";
+        # in a preflight response, tells browser the subsequent actual request can include user credentials (e.g., cookies)
+        add_header 'Access-Control-Allow-Credentials' 'true';
+
+        #
+        # Return special preflight info
+        #
+        
+        # Tell browser to cache this pre-flight info for 20 days
+        add_header 'Access-Control-Max-Age' 1728000;
+
+        # Tell browser we respond to GET,POST,OPTIONS in normal CORS requests.
+        #
+        # Not officially needed but still included to help non-conforming browsers.
+        #
+        # OPTIONS should not be needed here, since the field is used
+        # to indicate methods allowed for "actual request" not the
+        # preflight request.
+        #
+        # GET,POST also should not be needed, since the "simple
+        # methods" GET,POST,HEAD are included by default.
+        #
+        # We should only need this header for non-simple requests
+        # methods (e.g., DELETE), or custom request methods (e.g., XMODIFY)
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        
+        # Tell browser we accept these headers in the actual request
+        #
+        # A dynamic, wide-open config would just echo back all the headers
+        # listed in the preflight request's
+        # Access-Control-Request-Headers.
+        #
+        # A dynamic, restrictive config, would just echo back the
+        # subset of Access-Control-Request-Headers headers which are
+        # allowed for this resource.
+        #
+        # This static, fairly open config just returns a hardcoded set of
+        # headers that covers many cases, including some headers that
+        # are officially unnecessary but actually needed to support
+        # non-conforming browsers
+        # 
+        # Comment on some particular headers below:
+        #
+        # Authorization -- practically and officially needed to support
+        # requests using HTTP Basic Access authentication. Browser JS
+        # can use HTTP BA authentication with an XmlHttpRequest object
+        # req by calling
+        # 
+        #   req.withCredentials=true,  and
+        #   req.setRequestHeader('Authorization','Basic ' + window.btoa(theusername + ':' + thepassword))
+        #
+        # Counterintuitively, the username and password fields on
+        # XmlHttpRequest#open cannot be used to set the authorization
+        # field automatically for CORS requests.
+        #
+        # Content-Type -- this is a "simple header" only when it's
+        # value is either application/x-www-form-urlencoded,
+        # multipart/form-data, or text/plain; and in that case it does
+        # not officially need to be included. But, if your browser
+        # code sets the content type as application/json, for example,
+        # then that makes the header non-simple, and then your server
+        # must declare that it allows the Content-Type header.
+        # 
+        # Accept,Accept-Language,Content-Language -- these are the
+        # "simple headers" and they are officially never
+        # required. Practically, possibly required.
+        #
+        # Origin -- logically, should not need to be explicitly
+        # required, since it's implicitly required by all of
+        # CORS. officially, it is unclear if it is required or
+        # forbidden! practically, probably required by existing
+        # browsers (Gecko does not request it but WebKit does, so
+        # WebKit might choke if it's not returned back).
+        #
+        # User-Agent,DNT -- officially, should not be required, as
+        # they cannot be set as "author request headers". practically,
+        # may be required.
+        # 
+        # My Comment:
+        #
+        # The specs are contradictory, or else just confusing to me,
+        # in how they describe certain headers as required by CORS but
+        # forbidden by XmlHttpRequest. The CORS spec says the browser
+        # is supposed to set Access-Control-Request-Headers to include
+        # only "author request headers" (section 7.1.5). And then the
+        # server is supposed to use Access-Control-Allow-Headers to
+        # echo back the subset of those which is allowed, telling the
+        # browser that it should not continue and perform the actual
+        # request if it includes additional headers (section 7.1.5,
+        # step 8). So this implies the browser client code must take
+        # care to include all necessary headers as author request
+        # headers.
+        # 
+        # However, the spec for XmlHttpRequest#setRequestHeader
+        # (section 4.6.2) provides a long list of headers which the
+        # the browser client code is forbidden to set, including for
+        # instance Origin, DNT (do not track), User-Agent, etc.. This
+        # is understandable: these are all headers that we want the
+        # browser itself to control, so that malicious browser client
+        # code cannot spoof them and for instance pretend to be from a
+        # different origin, etc..
+        #
+        # But if XmlHttpRequest forbids the browser client code from
+        # setting these (as per the XmlHttpRequest spec), then they
+        # are not author request headers. And if they are not author
+        # request headers, then the browser should not include them in
+        # the preflight request's Access-Control-Request-Headers. And
+        # if they are not included in Access-Control-Request-Headers,
+        # then they should not be echoed by
+        # Access-Control-Allow-Headers. And if they are not echoed by
+        # Access-Control-Allow-Headers, then the browser should not
+        # continue and execute actual request. So this seems to imply
+        # that the CORS and XmlHttpRequest specs forbid certain
+        # widely-used fields in CORS requests, including the Origin
+        # field, which they also require for CORS requests.
+        #
+        # The bottom line: it seems there are headers needed for the
+        # web and CORS to work, which at the moment you should
+        # hard-code into Access-Control-Allow-Headers, although
+        # official specs imply this should not be necessary.
+        # 
+        add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since';
+
+        # build entire response to the preflight request
+        # no body in this response
+        add_header 'Content-Length' 0;
+        # (should not be necessary, but included for non-conforming browsers)
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        # indicate successful return with no content
+        return 204;
+    }
+    # --PUT YOUR REGULAR NGINX CODE HERE--
+}
+    </pre>
+    <p>
+      To expose the header, you simply add the following line inside either the <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your server config (usually located in a *.conf file, such as httpd.conf or apache.conf), or within a <code>.htaccess</code> file:
+    </p>
+    <pre class="code">Header set Access-Control-Allow-Origin "*"</pre>
+    <p class="note">
+      Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set. Eventually, you may need to reload Apache to make sure your changes are applied.
+    </p>
+    
+  </section>
+</div>
