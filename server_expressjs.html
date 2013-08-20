@@ -10,7 +10,7 @@ title: enable cross-origin resource sharing
 <p>
 				In your <a href="http://expressjs.com/">ExpressJS</a> app on <a href="http://nodejs.org/">node.js</a>, do the following with your routes:
 			</p>
-			<pre class="code">app.all('/', function(req, res, next) {
+			<pre class="code">app.all('*', function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "X-Requested-With");
   next();
