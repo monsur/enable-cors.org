@@ -15,6 +15,34 @@ title: enable cross-origin resource sharing
 				Note: this approach is compatible with IIS6, IIS7 Classic Mode, and IIS7 Integrated Mode.
 			</p>
 
+<h2>ASP.NET Web API</h2>
+
+<p>ASP.NET Web API 2 supports CORS.</p>
+
+<p>Add the <a href="http://www.nuget.org/packages/Microsoft.AspNet.WebApi.Cors">Install-Package Microsoft.AspNet.WebApi.Cors</a> NuGet package to your project.</p>
+
+<p>To enable CORS support, add this code to your configuration:</p>
+
+<pre class="code">
+public static void Register(HttpConfiguration config)
+{
+    // New code
+    config.EnableCors();
+}
+</pre>
+
+<p>To enable cross-origin requests, add the [EnableCors] attribute to your Web API controller or controller method:</p>
+
+<pre class="code">
+[EnableCors(origins: "http://example.com", headers: "*", methods: "*")]
+public class TestController : ApiController
+{
+    // Controller methods not shown...
+}
+</pre>
+
+<p>For more information, see the <a href="http://www.asp.net/web-api/overview/security/enabling-cross-origin-requests-in-web-api">official documentation</a>.</p>
+
 <h2>Libraries</h2>
 		<ul><li>The open source Thinktecture.IdentityModel security library contains a full-featured CORS implementation. Here is the <a href="http://brockallen.com/2012/06/28/cors-support-in-webapi-mvc-and-iis-with-thinktecture-identitymodel/">announcement page</a> with some samples. Here is the source for <a href="https://github.com/thinktecture/Thinktecture.IdentityModel.45">.NET 4.5</a> and for <a href="https://github.com/thinktecture/Thinktecture.IdentityModel.40">.NET 4.0</a>. Both are packaged into a <a href="http://nuget.org/packages/Thinktecture.IdentityModel">Nuget package</a> downloadable from Visual Studio.</li></ul>
 		</section>
