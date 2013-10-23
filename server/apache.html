@@ -13,7 +13,7 @@ title: enable cross-origin resource sharing
   Header set Access-Control-Allow-Origin "*"
 &lt;/IfModule&gt;</pre>
 
-   If no <code>.htaccess</code> file exists, simply create a new one.  If an <code>.htaccess</code> file already exists, make a backup of it and then add the above lines.  Finally, <a href="https://httpd.apache.org/docs/2.2/stopping.html">reload Apache</a> to make sure your changes are applied:</p>
+   If no <code>.htaccess</code> file exists, simply create a new one.  If an <code>.htaccess</code> file already exists, make a backup of it and then add the above lines.  Finally, <a href="https://httpd.apache.org/docs/2.2/stopping.html">reload Apache</a> to make sure your changes are applied:<p></p>
  <pre>sudo service apache2 reload</pre> 
  or <pre>apachectl -k graceful</pre>
    
@@ -30,7 +30,7 @@ title: enable cross-origin resource sharing
  <p class="note">Altering headers requires the use of <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>. Mod_headers is enabled by default in Apache, however, you may want to ensure it's enabled by running <code>a2enmod headers</code> on the command line.</p>
 
 <p>
-If you are still having trouble and Google isn't providing any answers, you can always post a question to the <a href="http://webmasters.stackexchange.com/">Pro Webmasters site</a>.  Remember to use the CORS and Apache tags.
+If you are still having trouble and Google isn't providing any answers, you can always post a question to the Q/A site <a href="http://serverfault.com/search?q=cors">ServerFault</a>.
 		</p>
 		</section>
 	</div>
