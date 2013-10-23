@@ -6,19 +6,19 @@ title: enable cross-origin resource sharing
 	<div class="container">
 		<section>
 		<h1>CORS on Apache</h1>
-
-<p>
-				Apache can be configured to expose this header using <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>, this is enabled by default in Apache however you may want to ensure it's enabled by running the following command:
-			</p>
-			<pre class="code">a2enmod headers</pre>
-			<p>
-				To expose the header, you simply add the following line inside either the <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your server config (usually located in a *.conf file, such as httpd.conf or apache.conf), or within a <code>.htaccess</code> file:
-			</p>
-			<pre class="code">Header set Access-Control-Allow-Origin "*"</pre>
-			<p class="note">
-				Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set. Eventually, you may need to reload Apache to make sure your changes are applied.
-			</p>
-
+    <p>To add the CORS authorization to the header using Apache, simply add the following line inside either the <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your server config (usually located in a *.conf file, such as httpd.conf or apache.conf), or within a <code>.htaccess</code> file:
+		</p>
+		
+		<pre class="code">
+<IfModule mod_headers.c>
+  Header set Access-Control-Allow-Origin "*"
+</IfModule>
+    </pre>
+    
+    <p>To ensure that your changes are correct, it is strongly reccomended that you use <pre class="code">apachectl -t</pre> to check your configuration changes for errors.  After this passes, you may need to reload Apache to make sure your changes are applied by running the command <pre>sudo service apache2 reload</pre> or <pre>apachectl -k graceful</pre>.</p>
+    <p>Altering headers requires the use of <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>. Mod_headers is enabled by default in Apache, however, you may want to ensure it's enabled by run <pre class="code">a2enmod headers</pre></p>
+		<p class="note"> Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set.
+		</p>
 		</section>
 	</div>
 
