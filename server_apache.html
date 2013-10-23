@@ -6,19 +6,32 @@ title: enable cross-origin resource sharing
 	<div class="container">
 		<section>
 		<h1>CORS on Apache</h1>
+    <p>The easiest way to CORS authorization on an Apache webserver is to include the following lines in an <code>.htaccess</code> file at the website's root directory:</p>
+		
+		<pre class="code">
+&lt;IfModule mod_headers.c&gt;
+  Header set Access-Control-Allow-Origin "*"
+&lt;/IfModule&gt;</pre>
+
+   If no <code>.htaccess</code> file exists, simply create a new one.  If an <code>.htaccess</code> file already exists, make a backup of it and then add the above lines.  Finally, <a href="https://httpd.apache.org/docs/2.2/stopping.html">reload Apache</a> to make sure your changes are applied:</p>
+ <pre>sudo service apache2 reload</pre> 
+ or <pre>apachectl -k graceful</pre>
+   
+   <p> You can also add the above lines to <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your <a href="https://wiki.apache.org/httpd/DistrosDefaultLayout">server config</a>. Also note that you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set.</p>
+
+ <h2>Troubleshooting</h2>
+ 
+<p>It is strongly reccomended that you backup your original file and test your new config before applying:</p>
+    
+    <pre class="code">apachectl configtest</pre>
+    
+<p> If you run into errors, restore your backup configuration files and run <code>apachectl configtest</code> again. If your config files run without error, ensure that you have copied everything exactly and that the <code>Header set Access-Control-Allow-Origin "*"</code> line  is in the correct place.</p>
+  
+ <p class="note">Altering headers requires the use of <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>. Mod_headers is enabled by default in Apache, however, you may want to ensure it's enabled by running <code>a2enmod headers</code> on the command line.</p>
 
 <p>
-				Apache can be configured to expose this header using <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>, this is enabled by default in Apache however you may want to ensure it's enabled by running the following command:
-			</p>
-			<pre class="code">a2enmod headers</pre>
-			<p>
-				To expose the header, you simply add the following line inside either the <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your server config (usually located in a *.conf file, such as httpd.conf or apache.conf), or within a <code>.htaccess</code> file:
-			</p>
-			<pre class="code">Header set Access-Control-Allow-Origin "*"</pre>
-			<p class="note">
-				Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set. Eventually, you may need to reload Apache to make sure your changes are applied.
-			</p>
-
+If you are still having trouble and Google isn't providing any answers, you can always post a question to the <a href="http://webmasters.stackexchange.com/">Pro Webmasters site</a>.  Remember to use the CORS and Apache tags.
+		</p>
 		</section>
 	</div>
 
