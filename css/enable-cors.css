@@ -46,3 +46,11 @@ section {
 .navbar .btn-navbar {
   margin-top: 10px;
 }
+
+.bookcover {
+	float: left;
+	border: 0px;
+	margin-right: 5px;
+	width: 140px;
+	height: 175px;
+}
