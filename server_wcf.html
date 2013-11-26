@@ -13,10 +13,10 @@ title: enable cross-origin resource sharing
         <pre class="code">
              public class CustomHeaderMessageInspector : IDispatchMessageInspector
             {
-                Dictionary<string, string> requiredHeaders;
-                public CustomHeaderMessageInspector (Dictionary<string, string> headers)
+                Dictionary&lt;string, string&gt; requiredHeaders;
+                public CustomHeaderMessageInspector (Dictionary&lt;string, string&gt; headers)
                 {
-                    requiredHeaders = headers ?? new Dictionary<string, string>();
+                    requiredHeaders = headers ?? new Dictionary&lt;string, string&gt;();
                 }
 
                 public object AfterReceiveRequest(ref System.ServiceModel.Channels.Message request, System.ServiceModel.IClientChannel channel, System.ServiceModel.InstanceContext instanceContext)
@@ -50,7 +50,7 @@ title: enable cross-origin resource sharing
 
                 public void ApplyDispatchBehavior(ServiceEndpoint endpoint, System.ServiceModel.Dispatcher.EndpointDispatcher endpointDispatcher)
                 {
-                    var requiredHeaders = new Dictionary<string, string>();
+                    var requiredHeaders = new Dictionary&lt;string, string&gt;();
 
                     requiredHeaders.Add("Access-Control-Allow-Origin", "*");
                     requiredHeaders.Add("Access-Control-Request-Method", "POST,GET,PUT,DELETE,OPTIONS");
