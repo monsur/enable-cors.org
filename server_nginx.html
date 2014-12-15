@@ -12,7 +12,44 @@ title: enable cross-origin resource sharing
       whitelist of allowed origins, and various default values that
       may be needed to workaround incorrect browser
       implementations.</p>
-
+    <h3>Just the Code</h3>
+    <pre class="code">
+location / {
+    # Dont forget to change the scheme (https) to http if you prefer http,
+    # change `mckinsey.com` to your own domain name.
+    if ($http_origin ~* (https?://[^/]*\.mckinsey\.com(:[0-9]+)?)) {
+        set $cors "true";
+    }
+    if ($request_method = 'OPTIONS') {
+        set $cors "${cors}options";  
+    }
+    if ($request_method = 'GET') {
+        set $cors "${cors}get";  
+    }
+    if ($request_method = 'POST') {
+        set $cors "${cors}post";
+    }
+    if ($cors = "trueget") {
+        add_header 'Access-Control-Allow-Origin' "$http_origin";
+        add_header 'Access-Control-Allow-Credentials' 'true';
+    }
+    if ($cors = "truepost") {
+        add_header 'Access-Control-Allow-Origin' "$http_origin";
+        add_header 'Access-Control-Allow-Credentials' 'true';
+    }
+    if ($cors = "trueoptions") {
+        add_header 'Access-Control-Allow-Origin' "$http_origin";
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Max-Age' 1728000;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since';
+        add_header 'Content-Length' 0;
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        return 204;
+    }
+}
+    </pre>
+    <h3>All the Explaination</h3>
     <pre class="code">
 #
 # A CORS (Cross-Origin Resouce Sharing) config for nginx
