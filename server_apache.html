@@ -15,6 +15,12 @@ title: enable cross-origin resource sharing
 </IfModule>
     </pre>
     
+    <p> Or You can use safe and handy way to define whitelisted url using pattern </p>
+    <pre class="code">
+    	 SetEnvIfNoCase Origin "((http(s?))?://(www\.)?(mydomain)\.local)(:\d+)?$" AccessControlAllowOrigin=$0$1
+         Header set Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
+    </pre>
+    
     <p>To ensure that your changes are correct, it is strongly reccomended that you use <pre class="code">apachectl -t</pre> to check your configuration changes for errors.  After this passes, you may need to reload Apache to make sure your changes are applied by running the command <pre>sudo service apache2 reload</pre> or <pre>apachectl -k graceful</pre>.</p>
     <p>Altering headers requires the use of <a href="http://httpd.apache.org/docs/2.0/mod/mod_headers.html">mod_headers</a>. Mod_headers is enabled by default in Apache, however, you may want to ensure it's enabled by run <pre class="code">a2enmod headers</pre></p>
 		<p class="note"> Note: you can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's likely safer to use set.
