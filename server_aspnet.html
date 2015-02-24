@@ -41,6 +41,17 @@ public class TestController : ApiController
 }
 </pre>
 
+<h3>Enabling Globally</h3>
+
+<p>The method described above can also be used to enable CORS across the API without annotating each controller:</p>
+<pre class="code">
+public static void Register(HttpConfiguration config)
+{
+    var corsAttr = new EnableCorsAttribute("http://example.com", "*", "*");
+    config.EnableCors(corsAttr);
+}
+</pre>
+
 <p>For more information, see the official <a href="http://www.asp.net/web-api/overview/security/enabling-cross-origin-requests-in-web-api">Web API documentation</a>.</p>
 
 <h2>Libraries</h2>
