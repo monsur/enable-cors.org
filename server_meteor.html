@@ -1,0 +1,30 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on Meteor</h1>
+
+			<p>
+				To add CORS authorization to a <a href="http://www.meteor.com">Meteor</a> application, use the <a href="http://docs.meteor.com/#/full/webapp">webapp</a> package's <code>WebApp.connectHandlers</code> to customize HTTP headers. 
+			</p>
+			<pre class="code">// Listen to incoming HTTP requests, can only be used on the server
+WebApp.connectHandlers.use(function(req, res, next) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  return next();
+});</pre>
+
+			<p>
+				Use the optional <code>path</code> argument to only call the handler for paths that match a specified string. 
+			</p>
+			<pre class="code">// Listen to incoming HTTP requests, can only be used on the server
+WebApp.connectHandlers.use("/public", function(req, res, next) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  return next();
+});</pre>
+		</section>	
+		
+	</div>
+
