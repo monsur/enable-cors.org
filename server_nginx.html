@@ -14,20 +14,43 @@ title: enable cross-origin resource sharing
       implementations.</p>
 
     <pre class="code">
-map $http_origin $cors_header {
-    default "";
-    "~^https?://[^/]+\.example\.com(:[0-9]+)?$" "$http_origin";
+#
+# Wide-open CORS config for nginx
+#
+location / {
+     if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        #
+        # Om nom nom cookies
+        #
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        #
+        # Custom headers and headers various browsers *should* be OK with but aren't
+        #
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+        #
+        # Tell client that this pre-flight info is valid for 20 days
+        #
+        add_header 'Access-Control-Max-Age' 1728000;
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' 0;
+        return 204;
+     }
+     if ($request_method = 'POST') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+     }
+     if ($request_method = 'GET') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+     }
 }
-
-server {
-    ...
-    location / {
-        add_header Access-Control-Allow-Origin $cors_header;
-        try_files $uri $uri/ /index.php;
-    }
-    ...
- }
-    </pre>
-    Source: <a href="http://serverfault.com/questions/674900/nginx-if-statement-inside-location-returns-404">http://serverfault.com/questions/674900/nginx-if-statement-inside-location-returns-404</a>
+</pre>
+    Source: Michiel Kalkman, <a href="https://michielkalkman.com/snippets/nginx-cors-open-configuration.html">https://michielkalkman.com/snippets/nginx-cors-open-configuration.html</a>
   </section>
 </div>
