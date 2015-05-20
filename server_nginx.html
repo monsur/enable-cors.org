@@ -8,7 +8,7 @@ title: enable cross-origin resource sharing
     <h1>CORS on Nginx</h1>
     
     <p>The following Nginx configuration enables CORS, with support
-      for preflight requests.</p>
+      for preflight requests on all successful responses.</p>
 
     <pre class="code">
 #
@@ -16,7 +16,7 @@ title: enable cross-origin resource sharing
 #
 location / {
      if ($request_method = 'OPTIONS') {
-        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Origin' '$http_origin';
         #
         # Om nom nom cookies
         #
@@ -50,4 +50,26 @@ location / {
 </pre>
     Source: Michiel Kalkman, <a href="https://michielkalkman.com/snippets/nginx-cors-open-configuration.html">https://michielkalkman.com/snippets/nginx-cors-open-configuration.html</a>
   </section>
+  
+	<p>The following Nginx configuration enables CORS for all request statuses including 4xx and 5xx errors.
+	This configuration requires the use of <a href="http://wiki.nginx.org/HttpHeadersMoreModule">HttpHeadersMoreModule</a>
+	which usually requires extra steps to install.</p>
+
+    <pre class="code">	
+location / {
+        more_set_headers "Access-Control-Allow-Origin: $http_origin";
+        more_set_headers 'Access-Control-Allow-Credentials: true';
+        more_set_headers 'Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS';
+        more_set_headers 'Access-Control-Allow-Headers: DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+       
+     if ($request_method = 'OPTIONS') {
+        # Tell client that this pre-flight info is valid for 20 days
+        #
+        more_set_headers 'Access-Control-Max-Age: 1728000';
+        more_set_headers 'Content-Type: text/plain charset=UTF-8';
+        more_set_headers 'Content-Length: 0';
+        return 204;
+     }
+}   
+    </pre>
 </div>
