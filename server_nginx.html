@@ -36,7 +36,7 @@ location / {
 
         # be sure to add any other headers needed eg. X-APIKEY, Cache-Control ...
         add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST';
         add_header 'Content-Length' 0;
         add_header 'Access-Control-Max-Age' 86400; # allow caching for a day
         return 204;
