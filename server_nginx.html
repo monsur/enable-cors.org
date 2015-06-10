@@ -17,38 +17,37 @@ title: enable cross-origin resource sharing
 location / {
      # the dance you have to do because if's can't be nested in nginx
      if ($http_origin) {
-        set $cors "${cors}O"
+        set $cors "${cors}Origin"
      }
      if ($request_method = 'OPTIONS') {
-        set $cors "${cors}P"
+        set $cors "${cors}Options"
      }
      if ($request_method = 'POST') {
-        $cors = "${cors}S"
+        $cors = "${cors}Post"
      }
      if ($request_method = 'GET') {
-        $cors = "${cors}G"
+        $cors = "${cors}Get"
      }
 
-     # ORIGIN + OPTION request
-     if ($cors = OP) {
+     if ($cors = OriginOptions) {
         add_header 'Access-Control-Allow-Origin' $http_origin;
         # these are only needed on OPTIONS
-        add_header 'Access-Control-Allow-Credentials' 'true'; # techically only needed if doing credentials
+        add_header 'Access-Control-Allow-Credentials' 'true'; # technically only needed if doing credentials
 
-        # be sure to add any other headers needed eg. X-APIKEY, Cache-Control...
+        # be sure to add any other headers needed eg. X-APIKEY, Cache-Control ...
         add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
         add_header 'Content-Length' 0;
-        add_header 'Access-Control-Max-Age' 1728000;
+        add_header 'Access-Control-Max-Age' 86400; # allow caching for a day
         return 204;
      }
-     # ORIGIN + GET
-     if ($cors = OG) {
+     if ($cors = OriginGet) {
         add_header 'Access-Control-Allow-Origin' $http_origin;
+        add_header 'Access-Control-Allow-Credentials' 'true'; # technically only needed if doing credentials
      }
-     # ORIGIN + POST
-     if ($cors = OS) {
+     if ($cors = OriginPost) {
         add_header 'Access-Control-Allow-Origin' $http_origin;
+        add_header 'Access-Control-Allow-Credentials' 'true'; # technically only needed if doing credentials
      }
 }
 </pre>
