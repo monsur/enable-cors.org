@@ -1,0 +1,42 @@
+--- layout: default title: enable cross-origin resource sharing ---
+
+<div class="container">
+	<section>
+		<h1>CORS on AWS API Gateway</h1>
+		<p>
+			In your <a href="https://console.aws.amazon.com/apigateway/home">AWS API Gateway</a> console do the following:
+		</p>
+		<p>
+			Amazon API Gateway adds support for CORS enabling through a simple button in the API Gateway console. Unfortunately that button has a partial behavior, thus setting CORS correctly only for 200 answer (so not other HTTP status codes) and ignoring JQuery
+			header support. The best solution considered so far is about avoding to use the CORS button and set configurations manually. This can be achieved in a couple of steps:
+		</p>
+		<ol>
+			<li>Log into API Gateway console</li>
+			<li>Create all the REST resources that needs to be exposed with their methods before setting up CORS (if new resources/methods are created after enabling CORS, these steps must be repeated)</li>
+			<li>Select a resource</li>
+			<li>Add OPTIONS method, choose as integration type "mock"</li>
+			<li>For each Method of a resource</li>
+			<li>Go to Response Method</li>
+			<li>Add all the response method that should be supported (i.e. 200, 500, etc.)</li>
+			<li>For each response code set Response Headers to
+				<ul>
+					<li>X-Requested-With </li>
+					<li>Access-Control-Allow-Headers </li>
+					<li>Access-Control-Allow-Origin </li>
+					<li>Access-Control-Allow-Methods</li>
+				</ul></li>
+				<li>Go to Integration Response, select one of the created response codes, then Header Mappings</li>
+				<li>Insert default falues for headers
+					<br/> example:
+
+				<ul>
+					<li>X-Requested-With: '*' </li>
+					<li>Access-Control-Allow-Headers: 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with' </li>
+					<li>Access-Control-Allow-Origin: '*' </li>
+					<li>Access-Control-Allow-Methods: 'POST,GET,OPTIONS' </li>
+				</ul>
+				This operation has to be repeated for each method, including the newly created OPTIONS</li>
+				<li>Deploy the API to a stage</li>
+				<li>Check using http://client.cors-api.appspot.com/client that CORS requests have been successfully enabled</li>
+		</ol>
+</div>
