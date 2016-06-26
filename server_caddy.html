@@ -1,0 +1,37 @@
+---
+layout: default
+title: enable cross-origin resource sharing on caddyserver
+---
+
+<div class="container">
+	<section>
+  	<h1>CORS on Caddyserver</h1>
+    <p>
+      To add the CORS authorization to the header using Caddy, simply add the following line inside your caddyfile:
+  	</p>
+  	<pre class="code">cors</pre>
+    <p>
+      This will allow <b>all</b> resources to be accessed from <b>every</b> domain.
+    </p>
+    <p>
+      You can also be more specific, i.e. allow specific resources to specific domains:
+    </p>
+  	<pre class="code">cors /foo http://mysite.com http://anothertrustedsite.com</pre>
+    <p>
+      There are many more options you can use, here is a full example, as shown in the
+      <a href="https://caddyserver.com/docs/cors" target="_blank">caddyserver docs</a>:
+    </p>
+    
+  	<pre class="code">
+cors / {
+  origin            http://allowedSite.com
+  origin            http://anotherSite.org https://anotherSite.org
+  methods           POST,PUT
+  allow_credentials false
+  max_age           3600
+  allowed_headers   X-Custom-Header,X-Foobar
+  exposed_headers   X-Something-Special,SomethingElse
+}</pre>
+
+  </section>
+</div>
