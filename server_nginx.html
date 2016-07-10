@@ -16,8 +16,8 @@ title: enable cross-origin resource sharing
 #
 location / {
      if ($request_method = 'OPTIONS') {
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
         #
         # Custom headers and headers various browsers *should* be OK with but aren't
         #
@@ -25,20 +25,16 @@ location / {
         #
         # Tell client that this pre-flight info is valid for 20 days
         #
-        add_header 'Access-Control-Max-Age' 1728000;
-        add_header 'Content-Type' 'text/plain charset=UTF-8';
-        add_header 'Content-Length' 0;
+        add_header 'Access-Control-Max-Age' 1728000 always;
+        add_header 'Content-Type' 'text/plain charset=UTF-8' always;
+        add_header 'Content-Length' 0 always;
         return 204;
      }
-     if ($request_method = 'POST') {
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
-     }
-     if ($request_method = 'GET') {
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+     
+     if ($request_method = 'POST' || $request_method = 'GET' || $request_method = 'PUT' ||  $request_method = 'PATCH' || $request_method = 'DELETE' ) {
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type' always;
      }
 }
 </pre>
