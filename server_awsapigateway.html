@@ -8,7 +8,7 @@ title: enable cross-origin resource sharing
 		<h1>CORS on AWS API Gateway</h1>
 		<p>
 			<a href="https://console.aws.amazon.com/apigateway/home">Amazon API Gateway</a> adds support for CORS enabling through a simple button in the API Gateway console. Unfortunately that button has a partial behavior, thus setting CORS correctly only for 200 answer (so not other HTTP status codes) and ignoring JQuery
-			header support. The best solution considered so far is about avoding to use the CORS button and set configurations manually. This can be achieved in a couple of steps:
+			header support. The best solution considered so far is about avoiding to use the CORS button and set configurations manually. This can be achieved in a couple of steps:
 		</p>
 		<ol>
 			<li>Log into API Gateway console</li>
@@ -26,7 +26,7 @@ title: enable cross-origin resource sharing
 					<li>Access-Control-Allow-Methods</li>
 				</ul></li>
 				<li>Go to Integration Response, select one of the created response codes, then Header Mappings</li>
-				<li>Insert default falues for headers
+				<li>Insert default values for headers
 					<br/> example:
 
 				<ul>
