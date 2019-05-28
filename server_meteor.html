@@ -10,9 +10,13 @@ title: enable cross-origin resource sharing
 			<p>
 				To add CORS authorization to a <a href="http://www.meteor.com">Meteor</a> application, use the <a href="http://docs.meteor.com/#/full/webapp">webapp</a> package's <code>WebApp.connectHandlers</code> to customize HTTP headers. 
 			</p>
+      <p>
+        In order for Meteor APIs to work, the client will typically need to send requests with an "Authorization" header, and to request "Content-type: application/json".  The server will need to allow these with an "Access-Control-Allow-Headers" header, as shown below:
+      </p>
 			<pre class="code">// Listen to incoming HTTP requests, can only be used on the server
 WebApp.rawConnectHandlers.use(function(req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type");
   return next();
 });</pre>
 
