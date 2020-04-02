@@ -1,0 +1,31 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+<div class="container">
+	<section>
+		<h1>CORS on NestJS</h1>
+
+		<p>
+			In your <a href="https://nestjs.com/">NestJS</a> app on <a href="http://nodejs.org/">node.js</a>, do the
+			following with your application:
+		</p>
+		<pre class="code">app.enableCors({
+  origin: "YOUR-DOMAIN.TLD", // update to match the domain you will make the request from
+  allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept"
+});</pre>
+
+		<p>Alternatively, use the options object of the factory's <c>create()</c> method:</p>
+		<pre class="code">const app = await NestFactory.create(AppModule, { cors: true }); // to use defaults
+
+// or, for full configuration control:
+const app = await NestFactory.create(AppModule, {
+  cors: cors: {
+    origin: "YOUR-DOMAIN.TLD", // update to match the domain you will make the request from
+    allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept"
+  }
+});</pre>
+
+	</section>
+</div>
