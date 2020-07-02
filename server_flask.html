@@ -1,0 +1,34 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+<div class="container">
+  <section>
+    <h1>CORS on Flask</h1>
+    
+    <p>The following approach uses the <pre class="code">Flask-CORS</pre>
+    Python package to enable CORS in Flask.</p>
+
+    <p>Install the package:</p>
+    
+    <pre class="code">$ pip install -U flask-cors</pre>
+    
+    <p>Add it to your Flask app:</p>
+
+<pre class="code">
+# app.py
+from flask import Flask
+from flask_cors import CORS
+app = Flask(__name__)
+cors = CORS(app)
+</pre>
+
+    <p>Test by running the development server as usual:</p>
+
+<pre class="code">
+$ FLASK_APP=app.py flask run
+</pre>
+
+    <p>For full details read the <a href="https://flask-cors.readthedocs.io/">Flask-CORS package documentation</a>.</p>
+</section>
