@@ -13,6 +13,9 @@ title: enable cross-origin resource sharing
 			<h2>Tag Based File</h2>
 			<pre class="code">&lt;cfheader name="Access-Control-Allow-Origin" value="*"&gt;</pre>
 			<h2>Script Based File</h2>
+			<pre class="code">cfheader( name="Access-Control-Allow-Origin", value="*");</pre>
+			<br>
+			Or for versions of ColdFusion prior to 11:
 			<pre class="code">var response = getPageContext().getResponse();
 response.setHeader("Access-Control-Allow-Origin","*");</pre>
 			<p class="note">
