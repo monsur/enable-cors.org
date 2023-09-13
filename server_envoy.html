@@ -1,0 +1,20 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on Envoy</h1>
+		<p>Envoy includes support for CORS. The full documentation can be found <a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/cors_filter">here</a></p>
+		<p>Here is an example that demonstrates a CORS configuration:</p>
+		<pre class="code">
+cors:
+  allow_origin_string_match:
+  - safe_regex:
+      regex: \*
+    allow_methods: "GET"		
+		</pre>
+		</section>
+	</div>
+
