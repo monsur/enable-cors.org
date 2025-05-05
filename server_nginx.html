@@ -6,16 +6,13 @@ title: enable cross-origin resource sharing
 <div class="container">
   <section>
     <h1>CORS on Nginx</h1>
-    
+
     <p>The following Nginx configuration enables CORS, with support
       for preflight requests.</p>
-
+    <h2>Wide-open CORS config for nginx</h2>
     <pre class="code">
-#
-# Wide-open CORS config for nginx
-#
 location / {
-     if ($request_method = 'OPTIONS') {
+    if ($request_method = 'OPTIONS') {
         add_header 'Access-Control-Allow-Origin' '*';
         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
         #
@@ -29,21 +26,61 @@ location / {
         add_header 'Content-Type' 'text/plain; charset=utf-8';
         add_header 'Content-Length' 0;
         return 204;
-     }
-     if ($request_method = 'POST') {
+    }
+    if ($request_method = 'POST') {
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
         add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
-     }
-     if ($request_method = 'GET') {
+    }
+    if ($request_method = 'GET') {
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
         add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
-     }
+    }
 }
 </pre>
     Source: Michiel Kalkman, <a href="https://michielkalkman.com/snippets/nginx-cors-open-configuration.html">https://michielkalkman.com/snippets/nginx-cors-open-configuration.html</a>
+
+    <h2>Origin-specified CORS config for nginx</h2>
+    <p>Replace all <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin"><code>$http_origin</code></a> with <code>$scheme://$host</code> if you need to compatibility with <a href="https://security.stackexchange.com/questions/91165/why-is-the-synchronizer-token-pattern-preferred-over-the-origin-header-check-to/91190#91190">Edge Legacy or Firefox &lt;69</a>.</p>
+    <pre class="code">
+location / {
+    if ($allow_cors = OPTIONS) {
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Origin' $http_origin;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        #
+        # Custom headers and headers various browsers *should* be OK with but aren't
+        #
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        #
+        # Tell client that this pre-flight info is valid for 20 days
+        #
+        add_header 'Access-Control-Max-Age' 86400;
+        add_header 'Content-Type' 'text/plain; charset=utf-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
+    if ($allow_cors = GET|POST) {
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Origin' $http_origin always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+    }
+}
+    </pre>
+    <p>The following directive must be placed <a href="https://stackoverflow.com/questions/27358804/nginx-map-directive-why-is-it-allowed-only-on-http-level">under <code>http {}</code> level</a></p>
+    <pre class="code">
+map '$request_method $http_origin' $allow_cors {
+    '~^OPTIONS https://(allow\.first\.domain|allow\.second\.domain)'    OPTIONS;
+    '~^(GET|POST) https://(allow\.first\.domain|allow\.second\.domain)' GET|POST;
+    default 0;
+}
+    </pre>
   </section>
 </div>
