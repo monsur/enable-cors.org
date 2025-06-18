@@ -73,8 +73,8 @@ location / {
     <p>The following directive must be placed <a href="https://stackoverflow.com/questions/27358804/nginx-map-directive-why-is-it-allowed-only-on-http-level">under <code>http {}</code> level</a></p>
     <pre class="code">
 map '$request_method $http_origin' $allow_cors {
-    '~^OPTIONS https://(allow\.first\.domain|allow\.second\.domain)'    OPTIONS;
-    '~^(GET|POST) https://(allow\.first\.domain|allow\.second\.domain)' GET|POST;
+    '~^OPTIONS https://(allow\.first\.domain|allow\.second\.domain)$'    OPTIONS;
+    '~^(GET|POST) https://(allow\.first\.domain|allow\.second\.domain)$' GET|POST;
     default 0;
 }
     </pre>
