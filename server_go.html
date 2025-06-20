@@ -1,0 +1,57 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+<div class="container">
+	<section>
+		<h1>CORS on Go</h1>
+		<p>
+			Add a CORS middleware to your Go simple web server (using the <a href="https://golang.org/pkg/net/http/">http</a> package) as follows:<br>
+		</p>
+		<pre class="code">
+package main
+
+import  (
+  "log"
+  "net/http"
+)
+
+func withCORS(next http.HandlerFunc) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+    w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+    next(w, r)
+  }
+}
+
+func handleCRUD(w http.ResponseWriter, r *http.Request) {
+  // resource := r.URL.Path
+  switch r.Method {
+  case http.MethodPost:
+    // CREATE `resource`
+    w.WriteHeader(http.StatusCreated)
+  case http.MethodGet:
+    // RETRIEVE `resource`
+    w.WriteHeader(http.StatusOK)
+  case http.MethodPut:
+    // UPDATE `resource`
+    w.WriteHeader(http.StatusOK)
+  case http.MethodDelete:
+    // DELETE `resource`
+    w.WriteHeader(http.StatusNoContent)
+  default:
+    // ERROR
+    w.WriteHeader(http.StatusBadRequest)
+  }
+}
+
+func main() {
+  http.Handle("/", withCORS(handleCRUD))
+  log.Fatal(http.ListenAndServe(":8080", nil))
+}
+		</pre>
+		For more details about web servers and middlewares visit <a href="https://gowebexamples.com/">Go Web Examples</a>
+	</section>
+</div>
