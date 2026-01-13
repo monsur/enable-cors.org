@@ -27,11 +27,7 @@ location / {
         add_header 'Content-Length' 0;
         return 204;
     }
-    if ($request_method = 'POST') {
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
-    }
-    if ($request_method = 'GET') {
+    if ($request_method ~ 'GET|POST') {
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
     }
@@ -60,7 +56,7 @@ location / {
         add_header 'Content-Length' 0;
         return 204;
     }
-    if ($allow_cors = GET|POST) {
+    if ($allow_cors ~ 'GET|POST') {
         # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
         add_header 'Vary' 'Origin' always;
         add_header 'Access-Control-Allow-Origin' $http_origin always;
