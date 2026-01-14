@@ -7,14 +7,171 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on PHP</h1>
 
-<p>
-				If you don't have access to configure Apache, you can still send the header from a PHP script. It's a case of adding the following to your PHP scripts:
-			</p>
-			<pre class="code"> &lt;?php
- header("Access-Control-Allow-Origin: *");</pre>
-			<p class="note">
-				Note: as with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, this must be before any output has been sent from the server.
-		 	</p>
+		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+			<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your API. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+		</div>
+
+		<p>
+			If you don't have access to configure Apache/Nginx, you can still send CORS headers from a PHP script. This is useful for shared hosting or when you need different CORS policies for different endpoints.
+		</p>
+
+		<h2>Method 1: Simple Single Origin (Recommended)</h2>
+		<pre class="code">&lt;?php
+// Allow from specific origin
+header("Access-Control-Allow-Origin: https://example.com");
+header("Vary: Origin");
+
+// Your PHP code here</pre>
+
+		<h2>Method 2: Multiple Origins with Validation</h2>
+		<p>To allow multiple specific origins (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+		<pre class="code">&lt;?php
+$allowedOrigins = [
+    'https://example.com',
+    'https://app.example.com'
+];
+
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: $origin");
+    header("Vary: Origin");
+}
+
+// Your PHP code here</pre>
+
+		<h2>Method 3: With Preflight OPTIONS Handling</h2>
+		<p>For APIs that use custom headers or methods like PUT/DELETE:</p>
+		<pre class="code">&lt;?php
+$allowedOrigins = [
+    'https://example.com',
+    'https://app.example.com'
+];
+
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+// Validate origin
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: $origin");
+    header("Vary: Origin");
+}
+
+// Set other CORS headers
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header("Access-Control-Max-Age: 86400");
+    http_response_code(204);
+    exit(0);
+}
+
+// Your API logic here</pre>
+
+		<h2>Method 4: With Credentials (Cookies/Sessions)</h2>
+		<p>When using cookies or sessions, you <strong>must</strong> specify exact origins (wildcards are not allowed):</p>
+		<pre class="code">&lt;?php
+$allowedOrigins = [
+    'https://example.com',
+    'https://app.example.com'
+];
+
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+// Validate origin
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: $origin");
+    header("Access-Control-Allow-Credentials: true");
+    header("Vary: Origin");
+}
+
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    header("Access-Control-Max-Age: 86400");
+    http_response_code(204);
+    exit(0);
+}
+
+// Your API logic here</pre>
+
+		<h2>Method 5: Reusable CORS Function</h2>
+		<p>Create a reusable function to simplify CORS configuration:</p>
+		<pre class="code">&lt;?php
+function handleCors($allowedOrigins = []) {
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+    // Validate origin
+    if (in_array($origin, $allowedOrigins)) {
+        header("Access-Control-Allow-Origin: $origin");
+        header("Access-Control-Allow-Credentials: true");
+        header("Vary: Origin");
+    }
+
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+    // Handle preflight
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        header("Access-Control-Max-Age: 86400");
+        http_response_code(204);
+        exit(0);
+    }
+}
+
+// Usage in your API
+handleCors(['https://example.com', 'https://app.example.com']);
+
+// Your API logic here
+$data = ['message' => 'CORS enabled'];
+header('Content-Type: application/json');
+echo json_encode($data);</pre>
+
+		<h2>Method 6: Public API (Wildcard - Use with Caution)</h2>
+		<p><strong>Only use for completely public resources:</strong></p>
+		<pre class="code">&lt;?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header("Access-Control-Max-Age: 86400");
+    http_response_code(204);
+    exit(0);
+}
+
+// Your public API logic here</pre>
+
+		<h2>Testing Your Configuration</h2>
+		<p>Test your CORS headers using curl:</p>
+		<pre class="code"># Test actual request
+curl -H "Origin: https://example.com" \
+     -I https://your-api.com/api.php
+
+# Should return:
+# Access-Control-Allow-Origin: https://example.com
+# Vary: Origin
+
+# Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     -I https://your-api.com/api.php
+
+# Test disallowed origin (should NOT return CORS headers)
+curl -H "Origin: https://evil.com" \
+     -I https://your-api.com/api.php</pre>
+
+		<p class="note">
+			<strong>Important:</strong> As with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, CORS headers must be sent <strong>before any output</strong> has been sent from the server. Call <code>header()</code> before any <code>echo</code>, <code>print</code>, or HTML output.
+		</p>
+
+		<p class="note">
+			<strong>Tip:</strong> For production applications, consider using a PHP framework like Laravel, Symfony, or Slim which have built-in CORS middleware packages that handle all edge cases automatically.
+		</p>
 
 		</section>
 	</div>
