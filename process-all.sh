@@ -40,12 +40,13 @@ echo ""
 
 # Process each file
 COUNTER=1
-echo "$UNCOMPLETED_FILES" | while read MD_FILE; do
+while read MD_FILE; do
   echo ""
   echo "[$COUNTER/$TOTAL] Processing: $MD_FILE"
   echo "--------------------------------------"
 
   # Run claude with the task for this file (print mode exits automatically, acceptEdits skips confirmations)
+  # Redirect stdin from /dev/null to prevent consuming input from the loop
   claude --print --permission-mode acceptEdits "Read the file claude/$MD_FILE and implement all the recommendations in the corresponding HTML file.
 
 After implementing the changes:
@@ -53,7 +54,7 @@ After implementing the changes:
 2. Update the .md file to mark it as \"✅ COMPLETED - Implemented January 2025\"
 3. Commit the documentation update in a separate commit
 
-Follow the same pattern as was done for server_appengine.html and server_awsapigateway.html."
+Follow the same pattern as was done for server_appengine.html and server_awsapigateway.html." < /dev/null
 
   EXIT_CODE=$?
 
@@ -63,7 +64,7 @@ Follow the same pattern as was done for server_appengine.html and server_awsapig
     echo "❌ Failed to process $MD_FILE (exit code: $EXIT_CODE)"
     echo ""
     echo "Do you want to continue with the next file? (y/n)"
-    read -r CONTINUE
+    read -r CONTINUE </dev/tty
     if [ "$CONTINUE" != "y" ] && [ "$CONTINUE" != "Y" ]; then
       echo "Stopping automation."
       exit 1
@@ -72,7 +73,7 @@ Follow the same pattern as was done for server_appengine.html and server_awsapig
 
   COUNTER=$((COUNTER + 1))
   echo ""
-done
+done <<< "$UNCOMPLETED_FILES"
 
 echo ""
 echo "======================================"
