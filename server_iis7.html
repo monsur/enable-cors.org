@@ -3,32 +3,267 @@ layout: default
 title: enable cross-origin resource sharing
 ---
 
-<div class="container">
-	<section>
-		<h1>CORS on IIS7</h1>
-		<h2>Adding required headers for underlying CORS handling</h2>
+	<div class="container">
+		<section>
+		<h1>CORS on IIS7+</h1>
 
 			<p>
-				For Microsoft IIS7, merge this into the <code>web.config</code> file at the root of your application or site:
+				Internet Information Services (IIS) 7 and later versions provide multiple approaches for configuring CORS. This guide covers modern, secure CORS implementations using web.config and the IIS CORS Module.
 			</p>
+
+			<div class="notebox">
+				<p><strong>Security Note:</strong> Never use <code>Access-Control-Allow-Origin: *</code> with credentials. The CORS specification only allows a single origin value - use dynamic origin validation for multiple domains. See <a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a> and <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for more details.</p>
+			</div>
+
+			<div class="notebox">
+				<p><strong>IIS Version Compatibility:</strong></p>
+				<ul>
+					<li><strong>IIS 7.0+</strong> - Custom headers work in all versions</li>
+					<li><strong>IIS 8.5+</strong> - CORS Module available as extension</li>
+					<li><strong>IIS 10.0+</strong> - Latest version with improved performance</li>
+				</ul>
+			</div>
+
+			<h2>Secure web.config Configuration (Recommended)</h2>
+
+			<p>For single trusted origin with proper OPTIONS handling:</p>
+
 			<pre class="code">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
 &lt;configuration&gt;
- &lt;system.webServer&gt;
-   &lt;httpProtocol&gt;
-     &lt;customHeaders&gt;
-       &lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;*&quot; /&gt;
-     &lt;/customHeaders&gt;
-   &lt;/httpProtocol&gt;
- &lt;/system.webServer&gt;
-&lt;/configuration&gt;</pre>
-			<p class="note">
-				If you don't have a <code>web.config</code> file already, or don't know what one is, just create a new file called <code>web.config</code> containing the snippet above.
-			</p>
-		
-		<h2>Adding CORS module for IIS to handle CORS by itself</h2>
-		<p>
-			Please refer to the <a href="https://docs.microsoft.com/en-us/iis/extensions/cors-module/cors-module-configuration-reference#cors-configuration">CORS Module Documentation</a>
-		</p>
-	</section>
-</div>
+  &lt;system.webServer&gt;
+    &lt;httpProtocol&gt;
+      &lt;customHeaders&gt;
+        &lt;!-- SECURE: Specify allowed origin instead of wildcard --&gt;
+        &lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;https://example.com&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Methods&quot; value=&quot;GET, POST, PUT, DELETE, OPTIONS&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Headers&quot; value=&quot;Content-Type, Authorization&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Max-Age&quot; value=&quot;86400&quot; /&gt;
+        &lt;add name=&quot;Vary&quot; value=&quot;Origin&quot; /&gt;
+      &lt;/customHeaders&gt;
+    &lt;/httpProtocol&gt;
 
+    &lt;!-- Handle OPTIONS preflight requests --&gt;
+    &lt;handlers&gt;
+      &lt;add name=&quot;OptionsHandler&quot; verb=&quot;OPTIONS&quot; path=&quot;*&quot;
+           type=&quot;System.Web.DefaultHttpHandler&quot;
+           resourceType=&quot;Unspecified&quot;
+           requireAccess=&quot;None&quot; /&gt;
+    &lt;/handlers&gt;
+
+    &lt;!-- Return 204 for OPTIONS requests --&gt;
+    &lt;rewrite&gt;
+      &lt;rules&gt;
+        &lt;rule name=&quot;CORS Preflight&quot; stopProcessing=&quot;true&quot;&gt;
+          &lt;match url=&quot;.*&quot; /&gt;
+          &lt;conditions&gt;
+            &lt;add input=&quot;{REQUEST_METHOD}&quot; pattern=&quot;^OPTIONS$&quot; /&gt;
+          &lt;/conditions&gt;
+          &lt;action type=&quot;CustomResponse&quot; statusCode=&quot;204&quot; statusReason=&quot;No Content&quot; /&gt;
+        &lt;/rule&gt;
+      &lt;/rules&gt;
+    &lt;/rewrite&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+
+			<p class="note">
+				<strong>Note:</strong> The URL Rewrite Module must be installed for preflight handling. Available from <a href="https://www.iis.net/downloads/microsoft/url-rewrite">Microsoft IIS Downloads</a> or via Web Platform Installer.
+			</p>
+
+			<h2>Configuration with Credentials</h2>
+
+			<p>When using credentials (cookies, HTTP authentication), you MUST specify an exact origin:</p>
+
+			<pre class="code">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;configuration&gt;
+  &lt;system.webServer&gt;
+    &lt;httpProtocol&gt;
+      &lt;customHeaders&gt;
+        &lt;!-- MUST use specific origin with credentials --&gt;
+        &lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;https://example.com&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Credentials&quot; value=&quot;true&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Methods&quot; value=&quot;GET, POST, PUT, DELETE, OPTIONS&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Headers&quot; value=&quot;Content-Type, Authorization&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Max-Age&quot; value=&quot;86400&quot; /&gt;
+        &lt;add name=&quot;Vary&quot; value=&quot;Origin&quot; /&gt;
+      &lt;/customHeaders&gt;
+    &lt;/httpProtocol&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+
+			<div class="notebox">
+				<p><strong>Important:</strong> This combination is <strong>INVALID</strong> per CORS specification:</p>
+				<pre class="code">&lt;!-- INVALID - Will fail in browsers --&gt;
+&lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;*&quot; /&gt;
+&lt;add name=&quot;Access-Control-Allow-Credentials&quot; value=&quot;true&quot; /&gt;</pre>
+			</div>
+
+			<h2>Using IIS CORS Module</h2>
+
+			<p>For sophisticated origin validation and multiple allowed origins, use the official <a href="https://docs.microsoft.com/en-us/iis/extensions/cors-module/cors-module-configuration-reference">IIS CORS Module</a> (IIS 8.5+):</p>
+
+			<h3>Installation</h3>
+
+			<p>Install via Web Platform Installer or download from Microsoft IIS Extensions.</p>
+
+			<h3>Configuration</h3>
+
+			<pre class="code">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;configuration&gt;
+  &lt;system.webServer&gt;
+    &lt;cors enabled=&quot;true&quot; failUnlistedOrigins=&quot;true&quot;&gt;
+      &lt;add origin=&quot;https://example.com&quot;
+           allowed=&quot;true&quot;
+           allowCredentials=&quot;true&quot;
+           maxAge=&quot;86400&quot;&gt;
+        &lt;allowHeaders&gt;
+          &lt;add header=&quot;Content-Type&quot; /&gt;
+          &lt;add header=&quot;Authorization&quot; /&gt;
+        &lt;/allowHeaders&gt;
+        &lt;allowMethods&gt;
+          &lt;add method=&quot;GET&quot; /&gt;
+          &lt;add method=&quot;POST&quot; /&gt;
+          &lt;add method=&quot;PUT&quot; /&gt;
+          &lt;add method=&quot;DELETE&quot; /&gt;
+        &lt;/allowMethods&gt;
+        &lt;exposeHeaders&gt;
+          &lt;add header=&quot;Content-Length&quot; /&gt;
+          &lt;add header=&quot;X-Custom-Header&quot; /&gt;
+        &lt;/exposeHeaders&gt;
+      &lt;/add&gt;
+      &lt;add origin=&quot;https://app.example.com&quot; allowed=&quot;true&quot; /&gt;
+    &lt;/cors&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+
+			<h2>Integration with ASP.NET</h2>
+
+			<p><strong>Important:</strong> Application-level CORS (in ASP.NET code) takes precedence over web.config headers.</p>
+
+			<p><strong>Best Practice:</strong></p>
+			<ul>
+				<li>Use web.config for static CORS configuration</li>
+				<li>Use ASP.NET code for dynamic origin validation (database lookups, business logic)</li>
+				<li>Don't configure both unless you understand the interaction</li>
+				<li>See the <a href="server_aspnet.html">ASP.NET CORS documentation</a> for application-level examples</li>
+			</ul>
+
+			<h2>Public API Configuration</h2>
+
+			<div class="notebox">
+				<p><strong>Security Warning:</strong> The example below uses <code>Access-Control-Allow-Origin: *</code> which allows ANY website to access your resources. This is only appropriate for completely public APIs. For most use cases, you should validate and whitelist specific origins.</p>
+			</div>
+
+			<p>For truly public APIs that don't use credentials:</p>
+
+			<pre class="code">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;configuration&gt;
+  &lt;system.webServer&gt;
+    &lt;httpProtocol&gt;
+      &lt;customHeaders&gt;
+        &lt;!-- WARNING: Only use for public APIs without credentials --&gt;
+        &lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;*&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Methods&quot; value=&quot;GET, POST, PUT, DELETE, OPTIONS&quot; /&gt;
+        &lt;add name=&quot;Access-Control-Allow-Headers&quot; value=&quot;Content-Type&quot; /&gt;
+      &lt;/customHeaders&gt;
+    &lt;/httpProtocol&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+
+			<p class="note">
+				If you don't have a <code>web.config</code> file already, create a new file called <code>web.config</code> at the root of your application or site containing one of the examples above.
+			</p>
+
+			<h2>Testing Your Configuration</h2>
+
+			<h3>Using curl</h3>
+
+			<p>Test preflight request:</p>
+
+			<pre class="code">curl -H &quot;Origin: https://example.com&quot; \
+     -H &quot;Access-Control-Request-Method: POST&quot; \
+     -H &quot;Access-Control-Request-Headers: Content-Type&quot; \
+     -X OPTIONS \
+     -v https://your-api.com/endpoint</pre>
+
+			<p>Expected headers in response:</p>
+
+			<pre class="code">Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 86400
+Vary: Origin</pre>
+
+			<h3>Browser DevTools</h3>
+
+			<ol>
+				<li>Open browser DevTools (F12)</li>
+				<li>Go to Network tab</li>
+				<li>Make a cross-origin request</li>
+				<li>Check response headers for CORS headers</li>
+				<li>Look for OPTIONS preflight request (for non-simple requests)</li>
+				<li>Check Console tab for CORS errors</li>
+			</ol>
+
+			<h2>Common CORS Errors</h2>
+
+			<h3>No 'Access-Control-Allow-Origin' header is present</h3>
+
+			<p><strong>Solution:</strong></p>
+			<ul>
+				<li>Verify web.config is in the correct location</li>
+				<li>Check that IIS has restarted after configuration changes</li>
+				<li>Ensure the file is being read (check IIS logs)</li>
+			</ul>
+
+			<h3>The 'Access-Control-Allow-Origin' header contains multiple values</h3>
+
+			<p><strong>Solution:</strong> Don't set CORS headers in both web.config and application code. Choose one approach.</p>
+
+			<h3>Credential is not supported if CORS header is '*'</h3>
+
+			<p><strong>Solution:</strong> Replace wildcard with specific origin when using credentials:</p>
+
+			<pre class="code">&lt;!-- Change from: --&gt;
+&lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;*&quot; /&gt;
+
+&lt;!-- To: --&gt;
+&lt;add name=&quot;Access-Control-Allow-Origin&quot; value=&quot;https://example.com&quot; /&gt;</pre>
+
+			<h3>Method POST is not allowed by Access-Control-Allow-Methods</h3>
+
+			<p><strong>Solution:</strong> Add the required method to Access-Control-Allow-Methods:</p>
+
+			<pre class="code">&lt;add name=&quot;Access-Control-Allow-Methods&quot; value=&quot;GET, POST, PUT, DELETE, OPTIONS&quot; /&gt;</pre>
+
+			<h2>Why the Vary Header Matters</h2>
+
+			<p>The <code>Vary: Origin</code> header prevents cache poisoning when CORS headers change based on the origin. Without it, one origin might receive another origin's cached response.</p>
+
+			<p><strong>Always include when:</strong></p>
+			<ul>
+				<li>Using dynamic origin validation</li>
+				<li>Supporting multiple specific origins</li>
+				<li>Using the IIS CORS Module</li>
+			</ul>
+
+			<h2>Performance Considerations</h2>
+
+			<ul>
+				<li><strong>Custom headers in web.config</strong> - Minimal performance impact, good for static configuration</li>
+				<li><strong>CORS Module</strong> - Better performance for complex validation with multiple origins</li>
+				<li><strong>Application-level CORS</strong> - Use middleware instead of checking origin in every request handler</li>
+				<li><strong>Preflight caching</strong> - Set <code>Access-Control-Max-Age</code> to reduce preflight requests (86400 = 24 hours)</li>
+			</ul>
+
+			<h2>Additional Resources</h2>
+
+			<ul>
+				<li><a href="https://docs.microsoft.com/en-us/iis/extensions/cors-module/cors-module-configuration-reference">Microsoft IIS CORS Module Configuration</a></li>
+				<li><a href="https://docs.microsoft.com/en-us/iis/configuration/">IIS Configuration Reference</a></li>
+				<li><a href="server_aspnet.html">ASP.NET CORS Configuration</a> - Application-level CORS</li>
+				<li><a href="https://www.iis.net/downloads/microsoft/url-rewrite">IIS URL Rewrite Module</a></li>
+				<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">MDN Web Docs: CORS</a></li>
+			</ul>
+		</section>
+
+	</div>
