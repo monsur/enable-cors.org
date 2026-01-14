@@ -7,26 +7,204 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS in CGI Scripts</h1>
 
+<div class="warn">
+<h4>⚠️ DEPRECATION NOTICE</h4>
+<p>CGI scripts are largely deprecated technology. For new projects, consider using modern frameworks:</p>
+<ul>
+<li><strong>Python:</strong> <a href="server_flask.html">Flask</a>, Django, FastAPI</li>
+<li><strong>Perl:</strong> <a href="server_perl.html">Plack/PSGI</a>, Dancer2, Mojolicious</li>
+</ul>
+<p>This documentation is maintained for legacy systems only.</p>
+</div>
+
+<h2>Basic CORS (Not Recommended)</h2>
+
 <p>
-				Just output the line:
-			</p>
-			<pre class="code">Access-Control-Allow-Origin: *</pre>
-			<p>
-				... as part of your CGI script's headers, for example, in Perl (using CGI.pm):
-			</p>
-			<pre class="code">print header(
+The simplest approach is to output a wildcard CORS header, but <strong>this is not recommended for production</strong> as it allows any origin to access your resources:
+</p>
+<pre class="code">Access-Control-Allow-Origin: *</pre>
+
+<h3>Perl Example (CGI.pm)</h3>
+<pre class="code">print header(
   -type => 'text/turtle',
   -content_location => 'mydata.ttl',
   -access_control_allow_origin => '*',
 );</pre>
-<p>For a more modern way of enabling CORS in Perl server scripts, see <a href="server_perl.html">the Perl page</a>.</p>
-			<p>
-				or in Python:
-			</p>
-			<pre class="code">print "Content-Type: text/turtle"
-print "Content-Location: mydata.ttl"
-print "Access-Control-Allow-Origin: *"</pre>
+
+<h3>Python 3 Example</h3>
+<pre class="code">#!/usr/bin/env python3
+
+print("Content-Type: text/turtle")
+print("Content-Location: mydata.ttl")
+print("Access-Control-Allow-Origin: *")
+print()  # Empty line ends headers</pre>
+
+<h2>Secure CORS with Origin Validation (Recommended)</h2>
+
+<p>For production systems, always validate the origin before setting CORS headers. This prevents unauthorized websites from accessing your resources.</p>
+
+<h3>Python 3 with Origin Validation</h3>
+<pre class="code">#!/usr/bin/env python3
+import os
+import sys
+import json
+
+# Configuration
+ALLOWED_ORIGINS = [
+    'https://example.com',
+    'https://app.example.com'
+]
+
+def enable_cors():
+    """Enable CORS with origin validation"""
+    origin = os.environ.get('HTTP_ORIGIN', '')
+
+    # Validate origin
+    if origin in ALLOWED_ORIGINS:
+        print(f"Access-Control-Allow-Origin: {origin}")
+        print("Access-Control-Allow-Credentials: true")
+        print("Vary: Origin")
+
+    # Handle preflight
+    if os.environ.get('REQUEST_METHOD') == 'OPTIONS':
+        print("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS")
+        print("Access-Control-Allow-Headers: Content-Type, Authorization")
+        print("Access-Control-Max-Age: 86400")
+        print("Status: 204 No Content")
+        print()  # Empty line ends headers
+        sys.exit(0)
+
+# Enable CORS
+enable_cors()
+
+# Your CGI logic
+print("Content-Type: application/json")
+print()  # Empty line ends headers
+
+# Response body
+response = {
+    'status': 'success',
+    'message': 'CORS enabled with origin validation'
+}
+print(json.dumps(response))</pre>
+
+<h3>Perl with Origin Validation</h3>
+<pre class="code">#!/usr/bin/env perl
+use strict;
+use warnings;
+use CGI;
+use JSON;
+
+# Configuration
+my @ALLOWED_ORIGINS = ('https://example.com', 'https://app.example.com');
+
+sub enable_cors {
+    my $origin = $ENV{HTTP_ORIGIN} || '';
+
+    # Validate origin
+    if (grep { $_ eq $origin } @ALLOWED_ORIGINS) {
+        print "Access-Control-Allow-Origin: $origin\n";
+        print "Access-Control-Allow-Credentials: true\n";
+        print "Vary: Origin\n";
+    }
+
+    # Handle preflight
+    if ($ENV{REQUEST_METHOD} eq 'OPTIONS') {
+        print "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\n";
+        print "Access-Control-Allow-Headers: Content-Type, Authorization\n";
+        print "Access-Control-Max-Age: 86400\n";
+        print "Status: 204 No Content\n\n";
+        exit 0;
+    }
+}
+
+# Enable CORS
+enable_cors();
+
+# Your CGI logic
+print "Content-Type: application/json\n\n";
+
+my $response = {
+    status => 'success',
+    message => 'CORS enabled with origin validation'
+};
+
+print encode_json($response);</pre>
+
+<h2>Important Security Considerations</h2>
+
+<ul>
+<li><strong>Never use wildcard (*) in production</strong> - Always validate origins against an allowlist</li>
+<li><strong>Include Vary: Origin header</strong> - Required when dynamically setting the Access-Control-Allow-Origin header based on the request origin</li>
+<li><strong>Handle preflight requests</strong> - Respond to OPTIONS requests for methods other than GET/POST</li>
+<li><strong>Be cautious with credentials</strong> - Only set Access-Control-Allow-Credentials: true for trusted origins</li>
+</ul>
+
+<p>For more information on CORS security, see <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a>.</p>
+
+<h2>Testing Your CGI Script</h2>
+
+<h3>Test with curl</h3>
+<pre class="code"># Test basic request
+curl -H "Origin: https://example.com" \
+     -v http://your-server.com/cgi-bin/script.cgi
+
+# Test preflight
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     -v http://your-server.com/cgi-bin/script.cgi</pre>
+
+<h3>Common CGI Issues</h3>
+<ul>
+<li><strong>Execute permissions:</strong> Make sure your script is executable: <code>chmod +x script.cgi</code></li>
+<li><strong>Shebang line:</strong> Ensure the correct path to the interpreter (#!/usr/bin/env python3 or #!/usr/bin/env perl)</li>
+<li><strong>Headers before body:</strong> Always print an empty line after headers</li>
+<li><strong>File encoding:</strong> Ensure no BOM (Byte Order Mark) in files</li>
+</ul>
+
+<h2>Migration Guide</h2>
+
+<h3>Why CGI is Deprecated</h3>
+<ul>
+<li><strong>Performance:</strong> New process spawned for each request</li>
+<li><strong>Resource intensive:</strong> High memory usage</li>
+<li><strong>Security:</strong> Difficult to secure properly</li>
+<li><strong>Modern alternatives:</strong> WSGI (Python), PSGI (Perl), FastCGI</li>
+</ul>
+
+<h3>When CGI is Still Appropriate</h3>
+<ul>
+<li>Legacy systems that cannot be migrated</li>
+<li>Simple, infrequent operations</li>
+<li>Shared hosting environments with no framework support</li>
+<li>Embedded systems with limited resources</li>
+</ul>
+
+<h3>Recommended Migration Paths</h3>
+
+<h4>Python: Migrate to Flask</h4>
+<pre class="code"># Install Flask
+pip install flask flask-cors
+
+# See Flask CORS documentation
+# <a href="server_flask.html">enable-cors.org/server_flask.html</a></pre>
+
+<h4>Perl: Migrate to Plack/PSGI</h4>
+<pre class="code"># Install Plack
+cpanm Plack
+
+# See Perl PSGI documentation
+# <a href="server_perl.html">enable-cors.org/server_perl.html</a></pre>
+
+<h2>Related Resources</h2>
+
+<p>For modern approaches to CORS in Perl and Python, see:</p>
+<ul>
+<li><a href="server_perl.html">Perl PSGI/Plack</a> - Modern Perl web development</li>
+<li><a href="server_flask.html">Flask</a> - Popular Python web framework</li>
+<li><a href="server_apache.html">Apache</a> - Often used to run CGI scripts</li>
+</ul>
 
 		</section>
 	</div>
-
