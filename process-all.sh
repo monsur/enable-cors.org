@@ -45,8 +45,8 @@ echo "$UNCOMPLETED_FILES" | while read MD_FILE; do
   echo "[$COUNTER/$TOTAL] Processing: $MD_FILE"
   echo "--------------------------------------"
 
-  # Run claude-code with the task for this file
-  claude-code "Read the file claude/$MD_FILE and implement all the recommendations in the corresponding HTML file.
+  # Run claude with the task for this file
+  claude "Read the file claude/$MD_FILE and implement all the recommendations in the corresponding HTML file.
 
 After implementing the changes:
 1. Commit the changes with a descriptive message that references any GitHub issues mentioned in the .md file (to auto-close them when pushed)
