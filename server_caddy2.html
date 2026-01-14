@@ -6,10 +6,156 @@ title: enable cross-origin resource sharing on caddyserver2
 <div class="container">
 	<section>
 	<h1>CORS on Caddyserver version 2</h1>
+
+    <div class="warning" style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+      <strong>⚠️ Security Warning:</strong> Using wildcard (<code>*</code>) for all CORS headers allows ANY website to access your resources with ANY method and ANY headers. Only use wildcards for completely public APIs. For production applications, always specify allowed origins, methods, and headers explicitly.
+    </div>
+
+    <h2>Secure Configuration (Recommended)</h2>
     <p>
-      To add the CORS authorization to the header using Caddy 2, simply add the following lines inside the site declaration:
-  	</p>
-  	<pre class="code">
+      For production use with a single trusted origin:
+    </p>
+    <pre class="code">
+sitename.com {
+  # Secure configuration for single trusted origin
+  file_server
+  encode zstd gzip
+
+  # Handle preflight requests
+  @cors_preflight {
+    method OPTIONS
+  }
+
+  header @cors_preflight {
+    Access-Control-Allow-Origin "https://example.com"
+    Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, Authorization"
+    Access-Control-Max-Age "86400"
+    Vary "Origin"
+  }
+
+  respond @cors_preflight 204
+
+  # For actual requests
+  header {
+    Access-Control-Allow-Origin "https://example.com"
+    Vary "Origin"
+  }
+}
+</pre>
+
+    <h2>Multiple Origins</h2>
+    <p>
+      To support multiple specific origins, use regex matching with Caddy's matcher system:
+    </p>
+    <pre class="code">
+sitename.com {
+  # Validate multiple origins using regex
+  @cors_origin_match {
+    header_regexp origin Origin ^https?://(www\.)?(example\.com|app\.example\.com)$
+  }
+
+  # Preflight for matched origins
+  @cors_preflight {
+    method OPTIONS
+  }
+
+  header @cors_preflight {
+    Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, Authorization"
+    Access-Control-Max-Age "86400"
+  }
+
+  header @cors_origin_match {
+    Access-Control-Allow-Origin "{http.request.header.Origin}"
+    Vary "Origin"
+  }
+
+  respond @cors_preflight 204
+
+  # Your backend
+  reverse_proxy localhost:8080
+}
+</pre>
+
+    <h2>Configuration with Credentials</h2>
+    <p>
+      For authenticated APIs that require cookies or authentication headers:
+    </p>
+    <pre class="code">
+api.example.com {
+  # CORS with credentials for authenticated API
+  @cors_allowed {
+    header Origin https://example.com
+  }
+
+  @cors_preflight {
+    method OPTIONS
+  }
+
+  header @cors_preflight {
+    Access-Control-Allow-Origin "https://example.com"
+    Access-Control-Allow-Methods "GET, POST, PUT, DELETE"
+    Access-Control-Allow-Headers "Content-Type, Authorization"
+    Access-Control-Allow-Credentials "true"
+    Access-Control-Max-Age "86400"
+    Vary "Origin"
+  }
+
+  respond @cors_preflight 204
+
+  header @cors_allowed {
+    Access-Control-Allow-Origin "https://example.com"
+    Access-Control-Allow-Credentials "true"
+    Vary "Origin"
+  }
+
+  # API backend
+  reverse_proxy localhost:3000
+}
+</pre>
+
+    <h2>Path-Specific CORS</h2>
+    <p>
+      Apply different CORS policies to different paths:
+    </p>
+    <pre class="code">
+example.com {
+  # Public API - open CORS
+  handle /api/public/* {
+    header {
+      Access-Control-Allow-Origin "*"
+    }
+    reverse_proxy localhost:8080
+  }
+
+  # Private API - restricted CORS
+  handle /api/private/* {
+    @cors_origin {
+      header Origin https://example.com
+    }
+
+    header @cors_origin {
+      Access-Control-Allow-Origin "https://example.com"
+      Access-Control-Allow-Credentials "true"
+      Vary "Origin"
+    }
+
+    reverse_proxy localhost:8080
+  }
+
+  # Static files - no CORS
+  handle {
+    file_server
+  }
+}
+</pre>
+
+    <h2>Insecure Configuration (Not Recommended)</h2>
+    <p>
+      Only use this for completely public APIs where you want to allow access from any origin:
+    </p>
+    <pre class="code">
 sitename.com {
   file_server
   encode zstd gzip
@@ -25,7 +171,40 @@ sitename.com {
   respond @options 204
 }
 </pre>
+    <p>
+      <strong>Warning:</strong> This configuration allows unrestricted access from any website. It provides no origin validation and should only be used for truly public data.
+    </p>
 
-    Instructions for Caddy Version 1 (older version) can be found <a href="server_caddy.html">here</a>.
+    <h2>Testing Your Configuration</h2>
+    <p>Test preflight requests:</p>
+    <pre class="code">
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type, Authorization" \
+     -X OPTIONS \
+     -v https://your-site.com/api/endpoint
+</pre>
+
+    <p>Test actual CORS requests:</p>
+    <pre class="code">
+curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     -X POST \
+     -d '{"test":"data"}' \
+     -v https://your-site.com/api/endpoint
+</pre>
+
+    <h2>Key Points</h2>
+    <ul>
+      <li>Always include <code>Vary: Origin</code> when the response varies by origin to prevent caching issues</li>
+      <li>Use <code>Access-Control-Max-Age</code> to cache preflight responses and reduce overhead</li>
+      <li>Cannot use wildcard (<code>*</code>) for origin when <code>Access-Control-Allow-Credentials</code> is true</li>
+      <li>The CORS specification only allows a single origin value in <code>Access-Control-Allow-Origin</code> - for multiple origins, validate and echo the request origin</li>
+      <li>Caddy v2 uses matchers and the <code>header</code> directive - there is no built-in cors middleware</li>
+    </ul>
+
+    <p>
+      Instructions for Caddy Version 1 (older version) can be found <a href="server_caddy.html">here</a>.
+    </p>
   </section>
 </div>
