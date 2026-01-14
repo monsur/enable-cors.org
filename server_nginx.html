@@ -7,76 +7,171 @@ title: enable cross-origin resource sharing
   <section>
     <h1>CORS on Nginx</h1>
 
-    <p>The following Nginx configuration enables CORS, with support
-      for preflight requests.</p>
-    <h2>Wide-open CORS config for nginx</h2>
-    <pre class="code">
-location / {
-    if ($request_method = 'OPTIONS') {
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-        #
-        # Custom headers and headers various browsers *should* be OK with but aren't
-        #
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
-        #
-        # Tell client that this pre-flight info is valid for 20 days
-        #
-        add_header 'Access-Control-Max-Age' 1728000;
-        add_header 'Content-Type' 'text/plain; charset=utf-8';
-        add_header 'Content-Length' 0;
-        return 204;
-    }
-    if ($request_method = 'POST') {
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
-    }
-    if ($request_method = 'GET') {
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
-    }
-}
-</pre>
-    Source: Michiel Kalkman, <a href="https://michielkalkman.com/snippets/nginx-cors-open-configuration.html">https://michielkalkman.com/snippets/nginx-cors-open-configuration.html</a>
+    <div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+      <strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. This is only appropriate for completely public APIs. For most use cases, validate and whitelist specific origins. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+    </div>
 
-    <h2>Origin-specified CORS config for nginx</h2>
-    <p>Replace all <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin"><code>$http_origin</code></a> with <code>$scheme://$host</code> if you need to compatibility with <a href="https://security.stackexchange.com/questions/91165/why-is-the-synchronizer-token-pattern-preferred-over-the-origin-header-check-to/91190#91190">Edge Legacy or Firefox &lt;69</a>.</p>
+    <div class="info" style="background: #d1ecf1; border: 1px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 5px;">
+      <strong>About the Vary Header:</strong> The <code>Vary: Origin</code> header is critical when your CORS headers change based on the origin. It prevents cache poisoning where one origin receives another origin's cached response. Always include it when using origin validation.
+    </div>
+
+    <h2>Method 1: Simple Single Origin (Recommended)</h2>
+    <p>For most use cases, specify a single trusted origin:</p>
     <pre class="code">
-location / {
-    if ($allow_cors = OPTIONS) {
-        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
-        add_header 'Vary' 'Origin' always;
-        add_header 'Access-Control-Allow-Origin' $http_origin;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-        #
-        # Custom headers and headers various browsers *should* be OK with but aren't
-        #
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
-        #
-        # Tell client that this pre-flight info is valid for 20 days
-        #
+location /api {
+    # Single trusted origin
+    add_header 'Access-Control-Allow-Origin' 'https://example.com' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+    add_header 'Vary' 'Origin' always;
+
+    if ($request_method = 'OPTIONS') {
         add_header 'Access-Control-Max-Age' 86400;
         add_header 'Content-Type' 'text/plain; charset=utf-8';
         add_header 'Content-Length' 0;
         return 204;
     }
-    if ($allow_cors = GET|POST) {
-        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+}
+    </pre>
+
+    <h2>Method 2: Multiple Origins with Simple Validation</h2>
+    <p>To allow multiple specific origins, use a simple regex check (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+    <pre class="code">
+location /api {
+    set $cors_origin "";
+
+    # Validate against allowed origins
+    if ($http_origin ~* (https?://(www\.)?example\.com|https?://app\.example\.com)) {
+        set $cors_origin $http_origin;
+    }
+
+    # Only set CORS headers if origin is allowed
+    add_header 'Vary' 'Origin' always;
+    add_header 'Access-Control-Allow-Origin' $cors_origin always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Max-Age' 86400;
+        add_header 'Content-Type' 'text/plain; charset=utf-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
+}
+    </pre>
+
+    <h2>Method 3: With Credentials (Cookies/Authentication)</h2>
+    <p>When using credentials, you <strong>must</strong> specify exact origins (wildcards are not allowed):</p>
+    <pre class="code">
+location /api {
+    # Must use specific origin, not wildcard
+    add_header 'Access-Control-Allow-Origin' 'https://example.com' always;
+    add_header 'Access-Control-Allow-Credentials' 'true' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+    add_header 'Vary' 'Origin' always;
+
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Max-Age' 86400;
+        return 204;
+    }
+}
+    </pre>
+
+    <h2>Method 4: Advanced - Using Map Directive</h2>
+    <p>For complex origin validation rules, use the map directive. The following directive must be placed <a href="https://stackoverflow.com/questions/27358804/nginx-map-directive-why-is-it-allowed-only-on-http-level">under <code>http {}</code> level</a> (typically in nginx.conf):</p>
+    <pre class="code">
+http {
+    # Map for CORS origin validation
+    map '$request_method $http_origin' $allow_cors {
+        '~^OPTIONS https://(example\.com|app\.example\.com|api\.example\.com)$'    OPTIONS;
+        '~^(GET|POST|PUT|DELETE) https://(example\.com|app\.example\.com|api\.example\.com)$' GET|POST|PUT|DELETE;
+        default 0;
+    }
+
+    # ... rest of http block
+}
+    </pre>
+
+    <p>In your server/location block:</p>
+    <pre class="code">
+location /api {
+    if ($allow_cors = OPTIONS) {
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#cors_and_caching
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Origin' $http_origin;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+        add_header 'Access-Control-Max-Age' 86400;
+        add_header 'Content-Type' 'text/plain; charset=utf-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
+
+    if ($allow_cors = GET|POST|PUT|DELETE) {
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#cors_and_caching
         add_header 'Vary' 'Origin' always;
         add_header 'Access-Control-Allow-Origin' $http_origin always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
         add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
     }
 }
     </pre>
-    <p>The following directive must be placed <a href="https://stackoverflow.com/questions/27358804/nginx-map-directive-why-is-it-allowed-only-on-http-level">under <code>http {}</code> level</a></p>
+    <p class="note"><strong>Note:</strong> Replace all <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin"><code>$http_origin</code></a> with <code>$scheme://$host</code> if you need compatibility with <a href="https://security.stackexchange.com/questions/91165/why-is-the-synchronizer-token-pattern-preferred-over-the-origin-header-check-to/91190#91190">Edge Legacy or Firefox &lt;69</a>.</p>
+
+    <h2>Method 5: Public API (Wildcard - Use with Caution)</h2>
+    <p><strong>Only use for completely public resources.</strong> This allows any website to access your API:</p>
     <pre class="code">
-map '$request_method $http_origin' $allow_cors {
-    '~^OPTIONS https://(allow\.first\.domain|allow\.second\.domain)$'    OPTIONS;
-    '~^(GET|POST) https://(allow\.first\.domain|allow\.second\.domain)$' GET|POST;
-    default 0;
+location /public-api {
+    add_header 'Access-Control-Allow-Origin' '*' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'Content-Type' always;
+
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Max-Age' 86400;
+        add_header 'Content-Type' 'text/plain; charset=utf-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
 }
     </pre>
+    <p class="note">Source: Based on <a href="https://michielkalkman.com/snippets/nginx-cors-open-configuration.html">Michiel Kalkman's configuration</a>, with security improvements.</p>
+
+    <h2>Configuration and Testing</h2>
+    <p>Test your Nginx configuration syntax before reloading:</p>
+    <pre class="code">
+# Test configuration
+nginx -t
+
+# Reload Nginx
+nginx -s reload
+# or
+sudo systemctl reload nginx
+    </pre>
+
+    <h3>Testing Your CORS Configuration</h3>
+    <p>Test with curl to verify your configuration:</p>
+    <pre class="code">
+# Test actual request with allowed origin
+curl -H "Origin: https://example.com" \
+     -I https://your-api.com/api/endpoint
+
+# Should return:
+# Access-Control-Allow-Origin: https://example.com
+# Vary: Origin
+
+# Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     -I https://your-api.com/api/endpoint
+
+# Test with disallowed origin (should NOT return CORS headers)
+curl -H "Origin: https://evil.com" \
+     -I https://your-api.com/api/endpoint
+    </pre>
+
+    <p class="note"><strong>Important:</strong> The <code>always</code> parameter ensures headers are added even for error responses (4xx, 5xx). This is crucial for CORS to work correctly in all scenarios.</p>
   </section>
 </div>
