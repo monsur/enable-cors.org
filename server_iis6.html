@@ -7,9 +7,41 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on IIS6</h1>
 
-<p>
-				To CORS-enable Microsoft IIS6, perform the following steps:
-			</p>
+			<div class="notebox" style="background: #f8d7da; border: 2px solid #dc3545; border-radius: 5px;">
+				<h3 style="color: #721c24; margin-top: 0;">⚠️ IIS 6 IS DEPRECATED AND UNSUPPORTED</h3>
+				<p><strong>IIS 6 reached end-of-life in 2015.</strong> It no longer receives security updates and should NOT be used in production.</p>
+				<ul>
+					<li><strong>Security Risk:</strong> Unpatched vulnerabilities</li>
+					<li><strong>Compliance Risk:</strong> Fails modern security standards</li>
+					<li><strong>Limited Features:</strong> Cannot implement secure CORS patterns</li>
+				</ul>
+				<p><strong>Action Required:</strong> Migrate to <a href="server_iis7.html">IIS 10 or later</a> immediately.</p>
+				<p>This documentation is maintained for legacy systems only.</p>
+			</div>
+
+			<h2>IIS 6 CORS Limitations</h2>
+
+			<p>IIS 6 has severe limitations that make it unsuitable for secure CORS implementations:</p>
+
+			<ul>
+				<li>Can only set static headers through GUI</li>
+				<li>No dynamic origin validation</li>
+				<li>No preflight OPTIONS request handling</li>
+				<li>No per-path CORS configuration</li>
+				<li>No support for credentials configuration</li>
+				<li>No web.config support for custom headers</li>
+			</ul>
+
+			<p><strong>For secure CORS:</strong> These limitations make IIS 6 unsuitable for modern web applications requiring proper CORS security. Upgrade to IIS 7.5 or later.</p>
+
+			<h2>IIS 6 Configuration (Legacy Systems Only)</h2>
+
+			<div class="notebox">
+				<p><strong>⚠️ Warning:</strong> This configuration allows ANY website to access your resources. Use only for completely public APIs with no sensitive data.</p>
+			</div>
+
+			<p>If you are absolutely required to use IIS 6 for a legacy system, follow these minimal steps:</p>
+
 			<ol>
 				<li>Open <em>Internet Information Service (IIS)</em> Manager</li>
 				<li>Right click the site you want to enable CORS for and go to <em>Properties</em></li>
@@ -20,6 +52,154 @@ title: enable cross-origin resource sharing
 				<li>Click <em>Ok</em> twice</li>
 			</ol>
 
+			<h3>Additional Required Headers</h3>
+
+			<p>Repeat the "Add" process to configure these headers:</p>
+
+			<ul>
+				<li><strong>Header Name:</strong> <code>Access-Control-Allow-Methods</code>, <strong>Value:</strong> <code>GET, POST, OPTIONS</code></li>
+				<li><strong>Header Name:</strong> <code>Access-Control-Allow-Headers</code>, <strong>Value:</strong> <code>Content-Type, Authorization</code></li>
+			</ul>
+
+			<div class="notebox">
+				<p><strong>Preflight Requests:</strong> IIS 6 cannot properly handle OPTIONS preflight requests through configuration alone. You must implement preflight handling in your application code (see below).</p>
+			</div>
+
+			<h2>Application-Level Workaround</h2>
+
+			<p>For those stuck on IIS 6, implement CORS at the application level for better security:</p>
+
+			<h3>ASP Classic</h3>
+
+			<pre class="code">&lt;%
+' ASP Classic - Application-level CORS (IIS 6)
+' Add this to the top of your ASP pages
+
+Dim allowedOrigins, requestOrigin, i
+allowedOrigins = Array("https://example.com", "https://app.example.com")
+requestOrigin = Request.ServerVariables("HTTP_ORIGIN")
+
+' Validate origin
+For i = 0 To UBound(allowedOrigins)
+    If requestOrigin = allowedOrigins(i) Then
+        Response.AddHeader "Access-Control-Allow-Origin", requestOrigin
+        Response.AddHeader "Vary", "Origin"
+        Exit For
+    End If
+Next
+
+' Handle preflight OPTIONS request
+If Request.ServerVariables("REQUEST_METHOD") = "OPTIONS" Then
+    Response.AddHeader "Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"
+    Response.AddHeader "Access-Control-Allow-Headers", "Content-Type, Authorization"
+    Response.AddHeader "Access-Control-Max-Age", "86400"
+    Response.Status = "204 No Content"
+    Response.End
+End If
+
+' Your application code continues...
+%&gt;</pre>
+
+			<h2>Why IIS 6 Cannot Do Modern CORS</h2>
+
+			<h3>Technical Limitations</h3>
+
+			<ol>
+				<li><strong>No Dynamic Headers:</strong> IIS 6 can only set static headers through GUI. Cannot validate request origin and respond with matching header.</li>
+				<li><strong>No HTTP Verb Filtering:</strong> Cannot configure different headers for OPTIONS vs GET/POST requests.</li>
+				<li><strong>Limited Configuration:</strong> No web.config support for custom headers, no modules/extensions for CORS.</li>
+				<li><strong>No Wildcard Alternatives:</strong> Cannot implement secure multi-origin CORS through configuration alone.</li>
+			</ol>
+
+			<h3>Security Implications</h3>
+
+			<ul>
+				<li>Forces use of wildcard <code>*</code> origin (insecure)</li>
+				<li>Cannot support credentials properly</li>
+				<li>Cannot scope CORS to specific paths</li>
+				<li>Vulnerable to cache poisoning (no Vary header support in GUI)</li>
+				<li>No protection against unauthorized cross-origin requests</li>
+			</ul>
+
+			<h2>Migration Path</h2>
+
+			<h3>Upgrade to IIS 7.5+ (Strongly Recommended)</h3>
+
+			<p>Modern IIS versions provide:</p>
+
+			<ul>
+				<li>✅ web.config-based CORS configuration</li>
+				<li>✅ IIS CORS Module for advanced scenarios</li>
+				<li>✅ Proper preflight handling</li>
+				<li>✅ Dynamic origin validation</li>
+				<li>✅ Credentials support</li>
+				<li>✅ Security updates and support</li>
+			</ul>
+
+			<p>See <a href="server_iis7.html">IIS 7+ CORS documentation</a> for modern IIS configuration.</p>
+
+			<h3>Migration Checklist</h3>
+
+			<ol>
+				<li><strong>Audit current IIS 6 usage</strong>
+					<ul>
+						<li>Document all sites and applications</li>
+						<li>Identify CORS requirements per application</li>
+					</ul>
+				</li>
+				<li><strong>Plan upgrade</strong>
+					<ul>
+						<li>Choose target platform (IIS 10 on Windows Server 2019+ recommended)</li>
+						<li>Test applications on new platform</li>
+						<li>Document breaking changes</li>
+					</ul>
+				</li>
+				<li><strong>Implement secure CORS</strong>
+					<ul>
+						<li>Use web.config or IIS CORS Module</li>
+						<li>Validate origins properly</li>
+						<li>Handle preflight requests</li>
+						<li>Test thoroughly</li>
+					</ul>
+				</li>
+				<li><strong>Decommission IIS 6</strong>
+					<ul>
+						<li>Migrate traffic to new servers</li>
+						<li>Archive old server</li>
+						<li>Update DNS/load balancers</li>
+					</ul>
+				</li>
+			</ol>
+
+			<h2>Why You Must Upgrade</h2>
+
+			<h3>End-of-Life Status</h3>
+
+			<ul>
+				<li><strong>IIS 6 was released in 2003</strong> (over 20 years old)</li>
+				<li><strong>Windows Server 2003 reached EOL in July 2015</strong></li>
+				<li>No security patches since 2015</li>
+				<li>Known unpatched vulnerabilities exist</li>
+			</ul>
+
+			<h3>Compliance and Risk</h3>
+
+			<ul>
+				<li>Fails PCI DSS compliance requirements</li>
+				<li>Violates most security policies</li>
+				<li>Exposes organization to legal liability</li>
+				<li>Cannot meet modern security standards</li>
+			</ul>
+
+			<h2>Additional Resources</h2>
+
+			<ul>
+				<li><a href="server_iis7.html">Migrate to modern IIS</a></li>
+				<li><a href="https://docs.microsoft.com/lifecycle/">IIS 6 End of Life Announcement</a></li>
+				<li><a href="https://www.microsoft.com/en-us/windows-server">Windows Server Information</a></li>
+				<li><a href="server_aspnet.html">ASP.NET CORS Documentation</a></li>
+			</ul>
 		</section>
+
 	</div>
 
