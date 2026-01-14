@@ -6,18 +6,284 @@ title: enable cross-origin resource sharing
 	<div class="container">
 		<section>
 		<h1>CORS on Tomcat</h1>
-		<p>Apache Tomcat includes support for CORS (Starting from Tomcat version 7.0.41). The full documentation can be found here: <a href="http://tomcat.apache.org/tomcat-7.0-doc/config/filter.html#CORS_Filter">http://tomcat.apache.org/tomcat-7.0-doc/config/filter.html#CORS_Filter</a></p>
-		<p>Here is an example from those docs that demonstrates a minimal CORS configuration:</p>
-		<pre class="code">
-&lt;filter&gt;
+
+		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+			<strong>⚠️ Security Warning:</strong> The default CorsFilter configuration uses <code>Access-Control-Allow-Origin: *</code> which allows <strong>any website</strong> to access your API. Always specify exact allowed origins using <code>cors.allowed.origins</code> parameter. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+		</div>
+
+		<p>Apache Tomcat includes built-in support for CORS via the <code>CorsFilter</code> (available since Tomcat 7.0.41). Configure it in your application's <code>web.xml</code> file.</p>
+
+		<h2>Method 1: Specific Origin (Recommended)</h2>
+		<p>Allow a single trusted origin:</p>
+		<pre class="code">&lt;filter&gt;
   &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
   &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;https://example.com&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.methods&lt;/param-name&gt;
+    &lt;param-value&gt;GET,POST,PUT,DELETE,OPTIONS&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.headers&lt;/param-name&gt;
+    &lt;param-value&gt;Content-Type,Authorization,X-Requested-With&lt;/param-value&gt;
+  &lt;/init-param&gt;
 &lt;/filter&gt;
+
 &lt;filter-mapping&gt;
   &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
-  &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+  &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;</pre>
+
+		<h2>Method 2: Multiple Origins</h2>
+		<p>Allow multiple specific origins (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+		<pre class="code">&lt;filter&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+
+  &lt;!-- Comma-separated list of allowed origins --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;https://example.com,https://app.example.com,https://staging.example.com&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.methods&lt;/param-name&gt;
+    &lt;param-value&gt;GET,POST,PUT,DELETE,OPTIONS&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.headers&lt;/param-name&gt;
+    &lt;param-value&gt;Content-Type,Authorization&lt;/param-value&gt;
+  &lt;/init-param&gt;
+&lt;/filter&gt;
+
+&lt;filter-mapping&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;</pre>
+
+		<h2>Method 3: With Credentials</h2>
+		<p>When using cookies or authentication:</p>
+		<pre class="code">&lt;filter&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;https://example.com&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;!-- Enable credentials (cookies, HTTP auth) --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.support.credentials&lt;/param-name&gt;
+    &lt;param-value&gt;true&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.methods&lt;/param-name&gt;
+    &lt;param-value&gt;GET,POST,PUT,DELETE,OPTIONS&lt;/param-value&gt;
+  &lt;/init-param&gt;
+&lt;/filter&gt;
+
+&lt;filter-mapping&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;</pre>
+
+		<h2>Method 4: Comprehensive Configuration</h2>
+		<p>Full configuration with all common parameters:</p>
+		<pre class="code">&lt;filter&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+
+  &lt;!-- Allowed origins --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;https://example.com,https://app.example.com&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;!-- Allowed HTTP methods --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.methods&lt;/param-name&gt;
+    &lt;param-value&gt;GET,POST,PUT,DELETE,OPTIONS&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;!-- Allowed request headers --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.headers&lt;/param-name&gt;
+    &lt;param-value&gt;Content-Type,Authorization,X-Requested-With&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;!-- Exposed response headers (visible to client) --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.exposed.headers&lt;/param-name&gt;
+    &lt;param-value&gt;Content-Length,X-Custom-Header&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;!-- Allow credentials (cookies, HTTP auth) --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.support.credentials&lt;/param-name&gt;
+    &lt;param-value&gt;true&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;!-- Preflight cache duration (seconds) --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.preflight.maxage&lt;/param-name&gt;
+    &lt;param-value&gt;86400&lt;/param-value&gt;
+  &lt;/init-param&gt;
+&lt;/filter&gt;
+
+&lt;filter-mapping&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;</pre>
+
+		<h2>Method 5: Origin Pattern Matching (Regex)</h2>
+		<p>Allow any subdomain of example.com using regex:</p>
+		<pre class="code">&lt;filter&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+
+  &lt;!-- Use regex to match origins --&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;*&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins.regex&lt;/param-name&gt;
+    &lt;param-value&gt;https?://(.+\.)?example\.com&lt;/param-value&gt;
+  &lt;/init-param&gt;
+
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.methods&lt;/param-name&gt;
+    &lt;param-value&gt;GET,POST,PUT,DELETE,OPTIONS&lt;/param-value&gt;
+  &lt;/init-param&gt;
+&lt;/filter&gt;
+
+&lt;filter-mapping&gt;
+  &lt;filter-name&gt;CorsFilter&lt;/filter-name&gt;
+  &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;</pre>
+
+		<h2>Method 6: Path-Specific CORS</h2>
+		<p>Apply different CORS policies to different paths:</p>
+		<pre class="code">&lt;!-- Restricted CORS for API endpoints --&gt;
+&lt;filter&gt;
+  &lt;filter-name&gt;ApiCorsFilter&lt;/filter-name&gt;
+  &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;https://example.com&lt;/param-value&gt;
+  &lt;/init-param&gt;
+&lt;/filter&gt;
+
+&lt;filter-mapping&gt;
+  &lt;filter-name&gt;ApiCorsFilter&lt;/filter-name&gt;
+  &lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
 &lt;/filter-mapping&gt;
-		</pre>
+
+&lt;!-- Open CORS for public endpoints --&gt;
+&lt;filter&gt;
+  &lt;filter-name&gt;PublicCorsFilter&lt;/filter-name&gt;
+  &lt;filter-class&gt;org.apache.catalina.filters.CorsFilter&lt;/filter-class&gt;
+  &lt;init-param&gt;
+    &lt;param-name&gt;cors.allowed.origins&lt;/param-name&gt;
+    &lt;param-value&gt;*&lt;/param-value&gt;
+  &lt;/init-param&gt;
+&lt;/filter&gt;
+
+&lt;filter-mapping&gt;
+  &lt;filter-name&gt;PublicCorsFilter&lt;/filter-name&gt;
+  &lt;url-pattern&gt;/public/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;</pre>
+
+		<h2>Testing Your Configuration</h2>
+		<p>Test your Tomcat CORS configuration with curl:</p>
+		<pre class="code"># Test actual request
+curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     -I http://localhost:8080/myapp/api/data
+
+# Should return:
+# Access-Control-Allow-Origin: https://example.com
+# Vary: Origin
+
+# Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type,Authorization" \
+     -X OPTIONS \
+     -I http://localhost:8080/myapp/api/data
+
+# Test with credentials
+curl -H "Origin: https://example.com" \
+     --cookie "JSESSIONID=ABC123" \
+     -I http://localhost:8080/myapp/api/data
+
+# Test disallowed origin (should NOT return CORS headers)
+curl -H "Origin: https://evil.com" \
+     -I http://localhost:8080/myapp/api/data</pre>
+
+		<h2>Common Filter Parameters</h2>
+		<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+			<tr style="background: #f0f0f0;">
+				<th style="border: 1px solid #ddd; padding: 8px;">Parameter</th>
+				<th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+				<th style="border: 1px solid #ddd; padding: 8px;">Default</th>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.allowed.origins</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Comma-separated allowed origins</td>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>*</code> (any)</td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.allowed.origins.regex</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Regex pattern for origins</td>
+				<td style="border: 1px solid #ddd; padding: 8px;">None</td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.allowed.methods</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Allowed HTTP methods</td>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>GET,POST,HEAD,OPTIONS</code></td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.allowed.headers</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Request headers allowed</td>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>*</code></td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.exposed.headers</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Response headers exposed to client</td>
+				<td style="border: 1px solid #ddd; padding: 8px;">None</td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.support.credentials</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Enable credentials</td>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>false</code></td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>cors.preflight.maxage</code></td>
+				<td style="border: 1px solid #ddd; padding: 8px;">Preflight cache (seconds)</td>
+				<td style="border: 1px solid #ddd; padding: 8px;"><code>1800</code> (30 min)</td>
+			</tr>
+		</table>
+
+		<p class="note"><strong>Important:</strong> CORS filter should be placed <strong>early</strong> in the filter chain, before authentication/authorization filters, so that preflight OPTIONS requests don't get rejected.</p>
+
+		<p>For full documentation, see:
+		<ul>
+			<li><a href="https://tomcat.apache.org/tomcat-10.1-doc/config/filter.html#CORS_Filter">Tomcat 10 CORS Filter Documentation</a></li>
+			<li><a href="https://tomcat.apache.org/tomcat-9.0-doc/config/filter.html#CORS_Filter">Tomcat 9 CORS Filter Documentation</a></li>
+		</ul>
+		</p>
+
 		</section>
 	</div>
 
