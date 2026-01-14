@@ -6,29 +6,216 @@ title: enable cross-origin resource sharing
 <div class="container">
   <section>
     <h1>CORS on Flask</h1>
-    
-    <p>The following approach uses the <pre class="code">Flask-CORS</pre>
-    Python package to enable CORS in Flask.</p>
 
-    <p>Install the package:</p>
-    
+    <div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+      <strong>⚠️ Security Warning:</strong> Using <code>CORS(app)</code> without parameters enables CORS for <strong>all origins</strong>. Always specify allowed origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+    </div>
+
+    <p>The recommended approach is to use the <code>Flask-CORS</code> Python package, which handles all CORS edge cases automatically.</p>
+
+    <h2>Installation</h2>
     <pre class="code">$ pip install -U flask-cors</pre>
-    
-    <p>Add it to your Flask app:</p>
 
-<pre class="code">
-# app.py
+    <h2>Method 1: Specific Origin (Recommended)</h2>
+    <p>Allow a single trusted origin:</p>
+
+<pre class="code"># app.py
 from flask import Flask
 from flask_cors import CORS
+
 app = Flask(__name__)
-cors = CORS(app)
-</pre>
+CORS(app, origins=["https://example.com"])
 
-    <p>Test by running the development server as usual:</p>
+@app.route("/api/data")
+def get_data():
+    return {"message": "CORS enabled"}
 
-<pre class="code">
-$ FLASK_APP=app.py flask run
-</pre>
+if __name__ == "__main__":
+    app.run()</pre>
 
-    <p>For full details read the <a href="https://flask-cors.readthedocs.io/">Flask-CORS package documentation</a>.</p>
+    <h2>Method 2: Multiple Origins</h2>
+    <p>Allow multiple specific origins (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+
+<pre class="code"># app.py
+from flask import Flask
+from flask_cors import CORS
+
+app = Flask(__name__)
+
+# Allow multiple specific origins
+cors = CORS(app, origins=[
+    "https://example.com",
+    "https://app.example.com",
+    "https://admin.example.com"
+])
+
+@app.route("/api/data")
+def get_data():
+    return {"message": "CORS enabled"}</pre>
+
+    <h2>Method 3: With Credentials</h2>
+    <p>When using cookies or authentication:</p>
+
+<pre class="code"># app.py
+from flask import Flask
+from flask_cors import CORS
+
+app = Flask(__name__)
+
+# Enable credentials (cookies, authorization headers)
+cors = CORS(
+    app,
+    origins=["https://example.com"],
+    supports_credentials=True
+)
+
+@app.route("/api/secure")
+def secure_endpoint():
+    return {"message": "Authenticated request"}</pre>
+
+    <h2>Method 4: Route-Specific CORS</h2>
+    <p>Apply CORS to specific routes only:</p>
+
+<pre class="code"># app.py
+from flask import Flask
+from flask_cors import CORS, cross_origin
+
+app = Flask(__name__)
+
+# Public endpoint with CORS
+@app.route("/api/public")
+@cross_origin(origins=["*"])
+def public_api():
+    return {"message": "Public endpoint"}
+
+# Private endpoint with restricted CORS
+@app.route("/api/private")
+@cross_origin(
+    origins=["https://example.com"],
+    supports_credentials=True
+)
+def private_api():
+    return {"message": "Private endpoint"}
+
+# No CORS
+@app.route("/internal")
+def internal_api():
+    return {"message": "Internal only"}</pre>
+
+    <h2>Method 5: Advanced Configuration</h2>
+    <p>Customize all CORS options:</p>
+
+<pre class="code"># app.py
+from flask import Flask
+from flask_cors import CORS
+
+app = Flask(__name__)
+
+cors_config = {
+    "origins": ["https://example.com", "https://app.example.com"],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+    "expose_headers": ["Content-Length", "X-Custom-Header"],
+    "supports_credentials": True,
+    "max_age": 86400
+}
+
+CORS(app, resources={r"/api/*": cors_config})
+
+@app.route("/api/data")
+def get_data():
+    return {"message": "CORS enabled with custom config"}</pre>
+
+    <h2>Method 6: Dynamic Origin Validation</h2>
+    <p>Validate origins programmatically:</p>
+
+<pre class="code"># app.py
+from flask import Flask, request
+from flask_cors import CORS
+
+app = Flask(__name__)
+
+def check_origin(origin):
+    """Custom origin validation logic"""
+    allowed_origins = [
+        "https://example.com",
+        "https://app.example.com"
+    ]
+    return origin in allowed_origins
+
+CORS(
+    app,
+    origins=check_origin,
+    supports_credentials=True
+)
+
+@app.route("/api/data")
+def get_data():
+    return {"message": "CORS with dynamic validation"}</pre>
+
+    <h2>Method 7: Manual Implementation (Without Package)</h2>
+    <p>If you prefer not to use Flask-CORS, implement manually:</p>
+
+<pre class="code"># app.py
+from flask import Flask, request, make_response
+
+app = Flask(__name__)
+
+ALLOWED_ORIGINS = [
+    "https://example.com",
+    "https://app.example.com"
+]
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get('Origin')
+
+    if origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Vary'] = 'Origin'
+
+    return response
+
+@app.route("/api/data", methods=['GET', 'POST', 'OPTIONS'])
+def api_data():
+    # Handle preflight
+    if request.method == 'OPTIONS':
+        response = make_response('', 204)
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        return response
+
+    return {"message": "CORS enabled"}</pre>
+
+    <h2>Testing Your Configuration</h2>
+    <p>Test your Flask CORS configuration with curl:</p>
+
+<pre class="code"># Test actual request
+curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     http://localhost:5000/api/data
+
+# Should return:
+# Access-Control-Allow-Origin: https://example.com
+
+# Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     http://localhost:5000/api/data
+
+# Test disallowed origin (should NOT return CORS headers)
+curl -H "Origin: https://evil.com" \
+     http://localhost:5000/api/data</pre>
+
+    <p>Run the development server:</p>
+<pre class="code">$ flask run
+# or
+$ python app.py</pre>
+
+    <p class="note"><strong>Note:</strong> The Flask-CORS package automatically handles preflight OPTIONS requests, validates origins, and includes the <code>Vary: Origin</code> header when needed. For full details read the <a href="https://flask-cors.readthedocs.io/">Flask-CORS package documentation</a>.</p>
+
+    <p class="note"><strong>Production Tip:</strong> Never use <code>CORS(app)</code> without parameters in production. Always explicitly specify allowed origins to prevent security vulnerabilities.</p>
 </section>
