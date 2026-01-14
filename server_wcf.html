@@ -6,95 +6,258 @@ title: enable cross-origin resource sharing
 <div class="container">
     <section>
         <h1>CORS on WCF</h1>
+
+        <div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <strong>⚠️ Important:</strong> Windows Communication Foundation (WCF) is in maintenance mode. Microsoft recommends:
+            <ul style="margin: 10px 0;">
+                <li><strong>ASP.NET Core Web API</strong> for REST APIs</li>
+                <li><strong>gRPC for .NET</strong> for RPC-style communication</li>
+                <li><strong><a href="https://github.com/CoreWCF/CoreWCF">CoreWCF</a></strong> (community-supported) for migrating existing WCF services</li>
+            </ul>
+            This documentation is maintained for legacy WCF applications only.
+        </div>
+
+        <div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your WCF service. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+        </div>
+
         <p>
-            For WCF service you have to develop new behavior and include it in the endpoint configuration:
+            For WCF service you have to develop a custom behavior and include it in the endpoint configuration:
         </p>
-        <h5>Create Message Inspector</h5>
+
+        <h2>Implementation with Origin Validation</h2>
+
+        <h3>Step 1: Create Message Inspector with Origin Validation</h3>
         <pre class="code">
-             public class CustomHeaderMessageInspector : IDispatchMessageInspector
+public class CustomHeaderMessageInspector : IDispatchMessageInspector
+{
+    private readonly Dictionary&lt;string, string&gt; _requiredHeaders;
+    private readonly string[] _allowedOrigins;
+
+    public CustomHeaderMessageInspector(
+        Dictionary&lt;string, string&gt; headers,
+        string[] allowedOrigins)
+    {
+        _requiredHeaders = headers ?? new Dictionary&lt;string, string&gt;();
+        _allowedOrigins = allowedOrigins ?? new string[0];
+    }
+
+    public object AfterReceiveRequest(
+        ref System.ServiceModel.Channels.Message request,
+        System.ServiceModel.IClientChannel channel,
+        System.ServiceModel.InstanceContext instanceContext)
+    {
+        return null;
+    }
+
+    public void BeforeSendReply(
+        ref System.ServiceModel.Channels.Message reply,
+        object correlationState)
+    {
+        var httpHeader = reply.Properties["httpResponse"]
+            as HttpResponseMessageProperty;
+
+        if (httpHeader == null)
+        {
+            httpHeader = new HttpResponseMessageProperty();
+            reply.Properties["httpResponse"] = httpHeader;
+        }
+
+        // Get the request to check origin
+        var request = OperationContext.Current.RequestContext.RequestMessage;
+        var requestProps = request.Properties["httpRequest"]
+            as HttpRequestMessageProperty;
+
+        var origin = requestProps?.Headers["Origin"];
+
+        // Validate and set origin
+        if (!string.IsNullOrEmpty(origin) &amp;&amp; _allowedOrigins.Contains(origin))
+        {
+            httpHeader.Headers.Add("Access-Control-Allow-Origin", origin);
+            httpHeader.Headers.Add("Vary", "Origin");
+        }
+
+        // Add other CORS headers
+        foreach (var item in _requiredHeaders)
+        {
+            if (!httpHeader.Headers.AllKeys.Contains(item.Key))
             {
-                Dictionary&lt;string, string&gt; requiredHeaders;
-                public CustomHeaderMessageInspector (Dictionary&lt;string, string&gt; headers)
-                {
-                    requiredHeaders = headers ?? new Dictionary&lt;string, string&gt;();
-                }
-
-                public object AfterReceiveRequest(ref System.ServiceModel.Channels.Message request, System.ServiceModel.IClientChannel channel, System.ServiceModel.InstanceContext instanceContext)
-                {
-                    return null;
-                }
-
-                public void BeforeSendReply(ref System.ServiceModel.Channels.Message reply, object correlationState)
-                {
-                    var httpHeader = reply.Properties["httpResponse"] as HttpResponseMessageProperty;
-                    foreach (var item in requiredHeaders)
-                    {
-                        httpHeader.Headers.Add(item.Key, item.Value);
-                    }           
-                }
+                httpHeader.Headers.Add(item.Key, item.Value);
             }
+        }
+    }
+}
         </pre>
-        <h5>Create Endpoint Behavior and use Message Inspector to add headers</h5>
+
+        <h3>Step 2: Create Endpoint Behavior</h3>
         <pre class="code">
-             public class EnableCrossOriginResourceSharingBehavior : BehaviorExtensionElement, IEndpointBehavior
-            {
-                public void AddBindingParameters(ServiceEndpoint endpoint, System.ServiceModel.Channels.BindingParameterCollection bindingParameters)
-                {
-           
-                }
+public class EnableCrossOriginResourceSharingBehavior :
+    BehaviorExtensionElement, IEndpointBehavior
+{
+    public void AddBindingParameters(
+        ServiceEndpoint endpoint,
+        System.ServiceModel.Channels.BindingParameterCollection bindingParameters)
+    {
+        // No implementation needed
+    }
 
-                public void ApplyClientBehavior(ServiceEndpoint endpoint, System.ServiceModel.Dispatcher.ClientRuntime clientRuntime)
-                {
-            
-                }
+    public void ApplyClientBehavior(
+        ServiceEndpoint endpoint,
+        System.ServiceModel.Dispatcher.ClientRuntime clientRuntime)
+    {
+        // No implementation needed
+    }
 
-                public void ApplyDispatchBehavior(ServiceEndpoint endpoint, System.ServiceModel.Dispatcher.EndpointDispatcher endpointDispatcher)
-                {
-                    var requiredHeaders = new Dictionary&lt;string, string&gt;();
+    public void ApplyDispatchBehavior(
+        ServiceEndpoint endpoint,
+        System.ServiceModel.Dispatcher.EndpointDispatcher endpointDispatcher)
+    {
+        // Define allowed origins (NOT wildcard)
+        var allowedOrigins = new[] {
+            "https://example.com",
+            "https://app.example.com"
+        };
 
-                    requiredHeaders.Add("Access-Control-Allow-Origin", "*");
-                    requiredHeaders.Add("Access-Control-Request-Method", "POST,GET,PUT,DELETE,OPTIONS");
-                    requiredHeaders.Add("Access-Control-Allow-Headers", "X-Requested-With,Content-Type");
+        var requiredHeaders = new Dictionary&lt;string, string&gt;();
 
-                    endpointDispatcher.DispatchRuntime.MessageInspectors.Add(new CustomHeaderMessageInspector(requiredHeaders));
-                }
+        // CRITICAL FIX: Use Access-Control-Allow-Methods (not Request-Method)
+        // Access-Control-Request-Method is a REQUEST header, not a RESPONSE header
+        requiredHeaders.Add(
+            "Access-Control-Allow-Methods",
+            "POST,GET,PUT,DELETE,OPTIONS"
+        );
 
-                public void Validate(ServiceEndpoint endpoint)
-                {
-            
-                }
+        requiredHeaders.Add(
+            "Access-Control-Allow-Headers",
+            "X-Requested-With,Content-Type,Authorization"
+        );
 
-                public override Type BehaviorType
-                {
-                    get { return typeof(EnableCrossOriginResourceSharingBehavior); }
-                }
+        // Optional: Allow credentials
+        // requiredHeaders.Add(
+        //     "Access-Control-Allow-Credentials",
+        //     "true"
+        // );
 
-                protected override object CreateBehavior()
-                {
-                    return new EnableCrossOriginResourceSharingBehavior();
-                }
-            }
+        // Preflight cache duration
+        requiredHeaders.Add(
+            "Access-Control-Max-Age",
+            "86400"
+        );
+
+        endpointDispatcher.DispatchRuntime.MessageInspectors.Add(
+            new CustomHeaderMessageInspector(requiredHeaders, allowedOrigins)
+        );
+    }
+
+    public void Validate(ServiceEndpoint endpoint)
+    {
+        // No validation needed
+    }
+
+    public override Type BehaviorType
+    {
+        get { return typeof(EnableCrossOriginResourceSharingBehavior); }
+    }
+
+    protected override object CreateBehavior()
+    {
+        return new EnableCrossOriginResourceSharingBehavior();
+    }
+}
         </pre>
-        <h5>Register new behavior in web.config</h5>
+
+        <h3>Step 3: Register Behavior in web.config</h3>
         <pre class="code">
-            &lt;extensions&gt;
-              &lt;behaviorExtensions&gt;        
-                &lt;add name=&quot;crossOriginResourceSharingBehavior&quot; type=&quot;Services.Behaviours.EnableCrossOriginResourceSharingBehavior, Services, Version=1.0.0.0, Culture=neutral&quot; /&gt;        
-              &lt;/behaviorExtensions&gt;      
-            &lt;/extensions&gt;
+&lt;system.serviceModel&gt;
+  &lt;extensions&gt;
+    &lt;behaviorExtensions&gt;
+      &lt;add name=&quot;crossOriginResourceSharingBehavior&quot;
+           type=&quot;YourNamespace.EnableCrossOriginResourceSharingBehavior, YourAssembly, Version=1.0.0.0, Culture=neutral&quot; /&gt;
+    &lt;/behaviorExtensions&gt;
+  &lt;/extensions&gt;
+
+  &lt;behaviors&gt;
+    &lt;endpointBehaviors&gt;
+      &lt;behavior name=&quot;corsEnabledBehavior&quot;&gt;
+        &lt;webHttp /&gt;
+        &lt;crossOriginResourceSharingBehavior /&gt;
+      &lt;/behavior&gt;
+    &lt;/endpointBehaviors&gt;
+  &lt;/behaviors&gt;
+
+  &lt;services&gt;
+    &lt;service name=&quot;YourNamespace.YourService&quot;&gt;
+      &lt;endpoint address=&quot;api&quot;
+                binding=&quot;webHttpBinding&quot;
+                behaviorConfiguration=&quot;corsEnabledBehavior&quot;
+                contract=&quot;YourNamespace.IYourServiceContract&quot; /&gt;
+    &lt;/service&gt;
+  &lt;/services&gt;
+&lt;/system.serviceModel&gt;
         </pre>
-        <h5>Add new behavior to endpoint behavior configuration</h5>
+
+        <h3>Step 4: Handle OPTIONS Preflight in Service Contract</h3>
         <pre class="code">
-            &lt;endpointBehaviors&gt;      
-            &lt;behavior name=&quot;jsonBehavior&quot;&gt;
-                &lt;webHttp /&gt;
-                &lt;crossOriginResourceSharingBehavior /&gt;
-            &lt;/behavior&gt;
-            &lt;/endpointBehaviors&gt;
+[ServiceContract]
+public interface IYourServiceContract
+{
+    [OperationContract]
+    [WebInvoke(Method = "GET", UriTemplate = "data")]
+    string GetData();
+
+    [OperationContract]
+    [WebInvoke(Method = "POST", UriTemplate = "data")]
+    string PostData(DataContract data);
+
+    // Handle preflight OPTIONS requests
+    [OperationContract]
+    [WebInvoke(Method = "OPTIONS", UriTemplate = "*")]
+    void HandlePreflight();
+}
+
+public class YourService : IYourServiceContract
+{
+    public string GetData()
+    {
+        return "Data";
+    }
+
+    public string PostData(DataContract data)
+    {
+        return "Success";
+    }
+
+    public void HandlePreflight()
+    {
+        // CORS headers are added by the message inspector
+        // Just return empty response with 204
+        WebOperationContext.Current.OutgoingResponse.StatusCode =
+            System.Net.HttpStatusCode.NoContent;
+    }
+}
         </pre>
-        <h5>Configure endpoint</h5>
+
+        <h2>Migration to Modern .NET</h2>
+        <p>For new applications, consider migrating to ASP.NET Core Web API with much simpler CORS configuration:</p>
         <pre class="code">
-            &lt;endpoint address=&quot;api&quot; binding=&quot;webHttpBinding&quot; behaviorConfiguration=&quot;jsonBehavior&quot; contract=&quot;Service.IServiceContract&quot; /&gt;
+// ASP.NET Core Web API - Much simpler!
+builder.Services.AddCors(options =&gt;
+{
+    options.AddDefaultPolicy(policy =&gt;
+    {
+        policy.WithOrigins("https://example.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
+var app = builder.Build();
+app.UseCors();
         </pre>
+
+        <p class="note"><strong>Critical Bug Fixed:</strong> The original code used <code>Access-Control-Request-Method</code> which is a <strong>request header</strong> sent by the browser, not a <strong>response header</strong>. The correct response header is <code>Access-Control-Allow-Methods</code>. This bug would cause CORS to fail.</p>
+
+        <p class="note"><strong>Note:</strong> For more information on migrating from WCF, see the <a href="https://docs.microsoft.com/aspnet/core/grpc/wcf">official migration guide</a> and the community-supported <a href="https://github.com/CoreWCF/CoreWCF">CoreWCF project</a>.</p>
     </section>
 </div>
