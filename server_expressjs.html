@@ -7,22 +7,210 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on ExpressJS</h1>
 
-<p>
-				In your <a href="http://expressjs.com/">ExpressJS</a> app on <a href="http://nodejs.org/">node.js</a>, do the following with your routes:
-			</p>
-			<pre class="code">app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "YOUR-DOMAIN.TLD"); // update to match the domain you will make the request from
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+			<strong>⚠️ Security Warning:</strong> Never deploy with placeholder domains like "YOUR-DOMAIN.TLD". Always replace with your actual allowed origins. For production applications, use the <code>cors</code> npm package or implement proper origin validation. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+		</div>
+
+		<h2>Method 1: Using the cors Package (Recommended)</h2>
+		<p>The <code>cors</code> npm package is the standard solution for <a href="http://expressjs.com/">Express.js</a> CORS handling. It's well-maintained, handles all edge cases, and is used by millions of projects (<a href="https://github.com/monsur/enable-cors.org/issues/138">issue #138</a>).</p>
+
+		<h3>Installation</h3>
+		<pre class="code">npm install cors</pre>
+
+		<h3>Simple Usage - Single Origin</h3>
+		<pre class="code">const express = require('express');
+const cors = require('cors');
+const app = express();
+
+// Allow specific origin
+app.use(cors({
+  origin: 'https://example.com',
+  credentials: true
+}));
+
+app.get('/api/data', function(req, res) {
+  res.json({message: 'CORS enabled'});
+});
+
+app.listen(3000);</pre>
+
+		<h3>Multiple Origins with Validation</h3>
+		<p>To allow multiple specific origins (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+		<pre class="code">const express = require('express');
+const cors = require('cors');
+const app = express();
+
+const allowedOrigins = ['https://example.com', 'https://app.example.com'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 204
+}));
+
+app.get('/api/data', function(req, res) {
+  res.json({message: 'CORS enabled'});
+});
+
+app.listen(3000);</pre>
+
+		<h3>Route-Specific CORS</h3>
+		<pre class="code">const express = require('express');
+const cors = require('cors');
+const app = express();
+
+// Public endpoint - open CORS
+app.get('/api/public', cors(), function(req, res) {
+  res.json({message: 'Public endpoint'});
+});
+
+// Private endpoint - restricted CORS
+const corsOptions = {
+  origin: 'https://example.com',
+  credentials: true
+};
+
+app.get('/api/private', cors(corsOptions), function(req, res) {
+  res.json({message: 'Private endpoint'});
+});
+
+app.listen(3000);</pre>
+
+		<h2>Method 2: Manual Implementation (Without Package)</h2>
+		<p>If you prefer not to use a package, implement CORS manually with proper origin validation:</p>
+
+		<pre class="code">const express = require('express');
+const app = express();
+
+// List of allowed origins
+const allowedOrigins = [
+  'https://example.com',
+  'https://app.example.com'
+];
+
+// CORS middleware
+app.use(function(req, res, next) {
+  const origin = req.headers.origin;
+
+  // Validate origin
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.header("Access-Control-Max-Age", "86400");
+    return res.sendStatus(204);
+  }
+
   next();
 });
 
-app.get('/', function(req, res, next) {
-  // Handle the get for this route
+// Your routes
+app.get('/api/data', function(req, res) {
+  res.json({message: 'CORS enabled'});
 });
 
-app.post('/', function(req, res, next) {
- // Handle the post for this route
+app.post('/api/data', function(req, res) {
+  res.json({message: 'POST request'});
+});
+
+app.listen(3000, function() {
+  console.log('Server running on port 3000');
 });</pre>
+
+		<h2>Method 3: Reusable CORS Middleware</h2>
+		<p>Create a reusable middleware module:</p>
+
+		<pre class="code">// cors-middleware.js
+function corsMiddleware(options = {}) {
+  const {
+    origins = [],
+    credentials = true,
+    methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    headers = ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge = 86400
+  } = options;
+
+  return function(req, res, next) {
+    const origin = req.headers.origin;
+
+    // Validate origin
+    if (origins.includes(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+
+      if (credentials) {
+        res.header("Access-Control-Allow-Credentials", "true");
+      }
+    }
+
+    res.header("Access-Control-Allow-Methods", methods.join(", "));
+    res.header("Access-Control-Allow-Headers", headers.join(", "));
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      res.header("Access-Control-Max-Age", maxAge.toString());
+      return res.sendStatus(204);
+    }
+
+    next();
+  };
+}
+
+module.exports = corsMiddleware;
+
+// Usage in app.js
+const express = require('express');
+const corsMiddleware = require('./cors-middleware');
+const app = express();
+
+app.use(corsMiddleware({
+  origins: ['https://example.com', 'https://app.example.com'],
+  credentials: true
+}));
+
+app.get('/api/data', (req, res) => {
+  res.json({message: 'CORS enabled'});
+});
+
+app.listen(3000);</pre>
+
+		<h2>Testing Your CORS Configuration</h2>
+		<p>Test your configuration with curl:</p>
+		<pre class="code"># Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type" \
+     -X OPTIONS \
+     -v http://localhost:3000/api/data
+
+# Test actual request
+curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     -X POST \
+     -d '{"test":"data"}' \
+     -v http://localhost:3000/api/data
+
+# Test disallowed origin (should NOT return CORS headers)
+curl -H "Origin: https://evil.com" \
+     -v http://localhost:3000/api/data</pre>
+
+		<p class="note"><strong>Note:</strong> The <code>cors</code> package handles preflight requests automatically, validates origins correctly, and handles edge cases you might miss in manual implementations. See the <a href="https://www.npmjs.com/package/cors">official cors package documentation</a> for more information.</p>
 
 		</section>
 	</div>
