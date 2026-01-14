@@ -3,20 +3,476 @@ layout: default
 title: enable cross-origin resource sharing
 ---
 
-<div class="container">
-  <section>
-    <h1>CORS on Spring Boot Applications in Kotlin</h1>
+	<div class="container">
+		<section>
+		<h1>CORS on Spring Boot Applications in Kotlin</h1>
 
-    <p>
-      The WebFilter in the
-      <a target="_blank" href="https://kotlinlang.org/">Kotlin</a>
-      code block below enables CORS on
-      <a target="_blank" href="https://projects.spring.io/spring-boot/">Spring Boot applications</a>
-      using the
-      <a target="_blank" href="http://docs.spring.io/spring-framework/docs/5.0.0.BUILD-SNAPSHOT/spring-framework-reference/html/web-reactive.html">WebFlux starter</a>.
-    </p>
-    <script src="https://gist.github.com/christoph-daehne/1c2d4342a377b8a21b6a3caedb500e23.js"></script>
-    Source: Christoph Dähne,
-    <a target="_blank" href="https://sandstorm.de/de/blog/post/cors-headers-for-spring-boot-kotlin-webflux-reactor-project.html">https://sandstorm.de/de/blog/post/cors-headers-for-spring-boot-kotlin-webflux-reactor-project.html</a>
-  </section>
-</div>
+			<p>
+				<a href="https://spring.io/projects/spring-boot">Spring Boot</a> with <a href="https://kotlinlang.org/">Kotlin</a> provides multiple elegant ways to configure CORS. This guide covers modern, secure implementations for both reactive (WebFlux) and traditional (Spring MVC) applications.
+			</p>
+
+			<div class="notebox">
+				<p><strong>Security Note:</strong> Never use <code>Access-Control-Allow-Origin: *</code> with credentials. The CORS specification only allows a single origin value - use explicit origin whitelisting for multiple domains. See <a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a> and <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for more details.</p>
+			</div>
+
+			<div class="notebox">
+				<p><strong>Which approach should I use?</strong></p>
+				<ul>
+					<li><strong>WebFlux (Reactive)</strong> - Use if you have <code>spring-boot-starter-webflux</code> dependency</li>
+					<li><strong>Spring MVC (Traditional)</strong> - Use if you have <code>spring-boot-starter-web</code> dependency</li>
+				</ul>
+				<p>Check your <code>build.gradle.kts</code> or <code>pom.xml</code> to determine which stack you're using.</p>
+			</div>
+
+			<h2>Method 1: Spring Boot WebFlux (Reactive)</h2>
+
+			<p>For reactive applications using Spring WebFlux:</p>
+
+			<pre class="code">// CorsConfig.kt
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.reactive.CorsWebFilter
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
+
+@Configuration
+class CorsConfig {
+    @Bean
+    fun corsWebFilter(): CorsWebFilter {
+        val corsConfig = CorsConfiguration().apply {
+            // Specify allowed origins (NOT wildcard)
+            allowedOrigins = listOf(
+                "https://example.com",
+                "https://app.example.com"
+            )
+
+            // Allowed HTTP methods
+            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+
+            // Allowed headers
+            allowedHeaders = listOf("Content-Type", "Authorization")
+
+            // Enable credentials
+            allowCredentials = true
+
+            // Preflight cache duration (seconds)
+            maxAge = 86400L
+        }
+
+        val source = UrlBasedCorsConfigurationSource().apply {
+            registerCorsConfiguration("/**", corsConfig)
+        }
+
+        return CorsWebFilter(source)
+    }
+}</pre>
+
+			<h2>Method 2: Spring MVC (Non-Reactive)</h2>
+
+			<p>For traditional servlet-based Spring Boot applications:</p>
+
+			<pre class="code">// CorsConfig.kt
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
+@Configuration
+class CorsConfig : WebMvcConfigurer {
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins(
+                "https://example.com",
+                "https://app.example.com"
+            )
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            .allowedHeaders("Content-Type", "Authorization")
+            .allowCredentials(true)
+            .maxAge(86400)
+    }
+}</pre>
+
+			<h2>Method 3: Controller-Level with @CrossOrigin</h2>
+
+			<p>Apply CORS configuration to an entire controller:</p>
+
+			<pre class="code">// ApiController.kt
+import org.springframework.web.bind.annotation.*
+
+// Per-controller CORS
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(
+    origins = ["https://example.com", "https://app.example.com"],
+    methods = [
+        RequestMethod.GET,
+        RequestMethod.POST,
+        RequestMethod.PUT,
+        RequestMethod.DELETE
+    ],
+    allowedHeaders = ["Content-Type", "Authorization"],
+    allowCredentials = "true",
+    maxAge = 86400
+)
+class ApiController {
+
+    @GetMapping("/data")
+    fun getData(): Map&lt;String, String&gt; {
+        return mapOf("message" to "CORS enabled")
+    }
+
+    // Override CORS for specific method
+    @CrossOrigin(origins = ["https://public.example.com"])
+    @GetMapping("/public")
+    fun getPublicData(): Map&lt;String, String&gt; {
+        return mapOf("message" to "Public endpoint")
+    }
+}</pre>
+
+			<h2>Method 4: Method-Level @CrossOrigin</h2>
+
+			<p>Apply CORS to individual methods for fine-grained control:</p>
+
+			<pre class="code">// ApiController.kt
+@RestController
+@RequestMapping("/api")
+class ApiController {
+
+    // CORS only on this specific method
+    @CrossOrigin(
+        origins = ["https://example.com"],
+        allowCredentials = "true"
+    )
+    @PostMapping("/secure")
+    fun secureEndpoint(@RequestBody data: Map&lt;String, Any&gt;): Map&lt;String, String&gt; {
+        return mapOf("status" to "success")
+    }
+
+    // No CORS on this method
+    @GetMapping("/internal")
+    fun internalEndpoint(): Map&lt;String, String&gt; {
+        return mapOf("message" to "Internal only")
+    }
+}</pre>
+
+			<h2>Method 5: With Spring Security</h2>
+
+			<p>When using Spring Security, configure CORS in your security configuration:</p>
+
+			<pre class="code">// SecurityConfig.kt
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.web.SecurityFilterChain
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+
+@Configuration
+@EnableWebSecurity
+class SecurityConfig {
+
+    @Bean
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .cors { cors -&gt;
+                cors.configurationSource(corsConfigurationSource())
+            }
+            .csrf { it.disable() }
+            .authorizeHttpRequests { auth -&gt;
+                auth.requestMatchers("/public/**").permitAll()
+                    .anyRequest().authenticated()
+            }
+
+        return http.build()
+    }
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration().apply {
+            allowedOrigins = listOf(
+                "https://example.com",
+                "https://app.example.com"
+            )
+            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            allowedHeaders = listOf("Authorization", "Content-Type")
+            allowCredentials = true
+            maxAge = 86400L
+        }
+
+        return UrlBasedCorsConfigurationSource().apply {
+            registerCorsConfiguration("/**", configuration)
+        }
+    }
+}</pre>
+
+			<div class="notebox">
+				<p><strong>Important:</strong> When using Spring Security, configure CORS <em>before</em> other security settings like CSRF. Place <code>.cors { }</code> as the first configuration in your security chain.</p>
+			</div>
+
+			<h2>Method 6: Environment-Based Configuration</h2>
+
+			<p>Use environment variables or profiles to manage allowed origins across environments:</p>
+
+			<pre class="code">// CorsConfig.kt
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
+@Configuration
+class CorsConfig(
+    @Value("\${cors.allowed-origins}")
+    private val allowedOrigins: List&lt;String&gt;
+) : WebMvcConfigurer {
+
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins(*allowedOrigins.toTypedArray())
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            .allowedHeaders("Content-Type", "Authorization")
+            .allowCredentials(true)
+            .maxAge(86400)
+    }
+}</pre>
+
+			<p><strong>application.yml:</strong></p>
+
+			<pre class="code">cors:
+  allowed-origins:
+    - https://example.com
+    - https://app.example.com
+
+# Or with profiles
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+cors:
+  allowed-origins:
+    - https://example.com
+
+---
+spring:
+  config:
+    activate:
+      on-profile: development
+
+cors:
+  allowed-origins:
+    - http://localhost:3000
+    - http://localhost:5173</pre>
+
+			<h2>Spring Boot/Kotlin Specific Considerations</h2>
+
+			<h3>1. WebFlux vs MVC</h3>
+
+			<p><strong>How to tell which you're using:</strong></p>
+
+			<pre class="code">// If you have spring-boot-starter-webflux
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+}
+// Use WebFlux approach (Method 1)
+
+// If you have spring-boot-starter-web
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")
+}
+// Use MVC approach (Method 2)</pre>
+
+			<p><strong>WebFlux (Reactive):</strong></p>
+			<ul>
+				<li>Use <code>CorsWebFilter</code> bean</li>
+				<li>For reactive, non-blocking applications</li>
+				<li>Use <code>org.springframework.web.cors.reactive.*</code> imports</li>
+			</ul>
+
+			<p><strong>MVC (Traditional):</strong></p>
+			<ul>
+				<li>Implement <code>WebMvcConfigurer</code></li>
+				<li>For servlet-based applications</li>
+				<li>Use <code>org.springframework.web.servlet.config.annotation.*</code> imports</li>
+			</ul>
+
+			<h3>2. Configuration Precedence</h3>
+
+			<p>When multiple CORS configurations exist, they are applied in this order (highest to lowest priority):</p>
+
+			<ol>
+				<li><strong>Method-level @CrossOrigin</strong> - Highest priority</li>
+				<li><strong>Controller-level @CrossOrigin</strong> - Medium priority</li>
+				<li><strong>Global configuration</strong> - Lowest priority</li>
+			</ol>
+
+			<p>More specific configurations override general ones.</p>
+
+			<h3>3. Kotlin DSL Advantages</h3>
+
+			<p>Kotlin's DSL makes configuration more readable and concise:</p>
+
+			<pre class="code">// Clean Kotlin DSL with apply
+val corsConfig = CorsConfiguration().apply {
+    allowedOrigins = listOf("https://example.com")
+    allowedMethods = listOf("GET", "POST")
+    allowCredentials = true
+}
+
+// vs Java
+CorsConfiguration corsConfig = new CorsConfiguration();
+corsConfig.setAllowedOrigins(Arrays.asList("https://example.com"));
+corsConfig.setAllowedMethods(Arrays.asList("GET", "POST"));
+corsConfig.setAllowCredentials(true);</pre>
+
+			<h2>Testing Your Configuration</h2>
+
+			<h3>1. Automated Testing with Spring Boot</h3>
+
+			<pre class="code">// CorsTest.kt
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class CorsTest @Autowired constructor(
+    private val mockMvc: MockMvc
+) {
+
+    @Test
+    fun `should allow whitelisted origin`() {
+        mockMvc.perform(
+            get("/api/data")
+                .header("Origin", "https://example.com")
+        )
+            .andExpect(status().isOk)
+            .andExpect(
+                header().string(
+                    "Access-Control-Allow-Origin",
+                    "https://example.com"
+                )
+            )
+    }
+
+    @Test
+    fun `should reject non-whitelisted origin`() {
+        mockMvc.perform(
+            get("/api/data")
+                .header("Origin", "https://evil.com")
+        )
+            .andExpect(status().isOk)
+            .andExpect(
+                header().doesNotExist("Access-Control-Allow-Origin")
+            )
+    }
+
+    @Test
+    fun `should handle preflight request`() {
+        mockMvc.perform(
+            options("/api/data")
+                .header("Origin", "https://example.com")
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "Content-Type")
+        )
+            .andExpect(status().isOk)
+            .andExpect(
+                header().string(
+                    "Access-Control-Allow-Methods",
+                    containsString("POST")
+                )
+            )
+    }
+}</pre>
+
+			<p>Run tests with:</p>
+			<pre class="code">./gradlew test
+# or
+./mvnw test</pre>
+
+			<h3>2. Test with curl</h3>
+
+			<p>Test actual request:</p>
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     http://localhost:8080/api/data \
+     -v</pre>
+
+			<p>Test preflight:</p>
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type" \
+     -X OPTIONS \
+     http://localhost:8080/api/data \
+     -v</pre>
+
+			<h3>3. Enable Spring Boot Logging</h3>
+
+			<p>Add to <strong>application.yml</strong> to debug CORS issues:</p>
+
+			<pre class="code">logging:
+  level:
+    org.springframework.web.cors: DEBUG
+    org.springframework.security.web.cors: DEBUG</pre>
+
+			<h3>4. Browser DevTools</h3>
+
+			<ol>
+				<li>Open browser console (F12)</li>
+				<li>Go to Network tab</li>
+				<li>Make request to your API endpoint</li>
+				<li>Check for preflight OPTIONS requests</li>
+				<li>Verify CORS headers in response</li>
+				<li>Check Console tab for CORS errors</li>
+			</ol>
+
+			<h2>Common Pitfalls</h2>
+
+			<h3>Pitfall 1: Using Wildcard with Credentials</h3>
+
+			<p>This combination is <strong>INVALID</strong> per CORS specification:</p>
+
+			<pre class="code">// INVALID - Will fail in browsers
+@CrossOrigin(origins = ["*"], allowCredentials = "true")</pre>
+
+			<p>Must use specific origins:</p>
+
+			<pre class="code">// VALID
+@CrossOrigin(
+    origins = ["https://example.com"],
+    allowCredentials = "true"
+)</pre>
+
+			<h3>Pitfall 2: Wrong Import Packages</h3>
+
+			<p>Make sure you're using the correct imports for your stack:</p>
+
+			<pre class="code">// WebFlux (Reactive) - CORRECT
+import org.springframework.web.cors.reactive.CorsWebFilter
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
+
+// MVC (Servlet) - CORRECT
+import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer</pre>
+
+			<h3>Pitfall 3: Missing Spring Security Configuration</h3>
+
+			<p>If you use Spring Security without CORS configuration, your CORS settings will be ignored. Always configure CORS in your Security Config when using Spring Security.</p>
+
+			<h2>Additional Resources</h2>
+
+			<ul>
+				<li><a href="https://docs.spring.io/spring-boot/docs/current/reference/html/web.html#web.servlet.spring-mvc.cors">Spring Boot CORS Documentation</a></li>
+				<li><a href="https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-cors">Spring Framework CORS Support</a></li>
+				<li><a href="https://docs.spring.io/spring-security/reference/servlet/integrations/cors.html">Spring Security CORS</a></li>
+				<li><a href="https://docs.spring.io/spring-boot/docs/current/reference/html/kotlin.html">Kotlin Spring Documentation</a></li>
+				<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">MDN: CORS</a></li>
+			</ul>
+		</section>
+
+	</div>
