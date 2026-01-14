@@ -3,40 +3,563 @@ layout: default
 title: enable cross-origin resource sharing
 ---
 
-    <div class="container">
-	<section>
+	<div class="container">
+		<section>
 		<h1>CORS on AWS API Gateway</h1>
-		<p>
-			<a href="https://console.aws.amazon.com/apigateway/home">Amazon API Gateway</a> adds support for CORS enabling through a simple button in the API Gateway console. Unfortunately that button has a partial behavior, thus setting CORS correctly only for 200 answer (so not other HTTP status codes) and ignoring JQuery
-			header support. The best solution considered so far is about avoiding to use the CORS button and set configurations manually. This can be achieved in a couple of steps:
-		</p>
-		<ol>
-			<li>Log into API Gateway console</li>
-			<li>Create all the REST resources that needs to be exposed with their methods before setting up CORS (if new resources/methods are created after enabling CORS, these steps must be repeated)</li>
-			<li>Select a resource</li>
-			<li>Add OPTIONS method, choose as integration type "mock"</li>
-			<li>For each Method of a resource</li>
-			<li>Go to Response Method</li>
-			<li>Add all the response method that should be supported (i.e. 200, 500, etc.)</li>
-			<li>For each response code set Response Headers to
-				<ul>
-					<li>X-Requested-With </li>
-					<li>Access-Control-Allow-Headers </li>
-					<li>Access-Control-Allow-Origin </li>
-					<li>Access-Control-Allow-Methods</li>
-				</ul></li>
-				<li>Go to Integration Response, select one of the created response codes, then Header Mappings</li>
-				<li>Insert default values for headers
-					<br/> example:
 
+			<p>
+				<a href="https://console.aws.amazon.com/apigateway/home">Amazon API Gateway</a> provides robust CORS support with significant differences between its two API types. This guide covers modern, secure CORS implementations using Infrastructure as Code and best practices.
+			</p>
+
+			<div class="notebox">
+				<p><strong>AWS API Gateway has two types:</strong></p>
 				<ul>
-					<li>X-Requested-With: '*' </li>
-					<li>Access-Control-Allow-Headers: 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with' </li>
-					<li>Access-Control-Allow-Origin: '*' </li>
-					<li>Access-Control-Allow-Methods: 'POST,GET,OPTIONS' </li>
+					<li><strong>HTTP API</strong> - Simpler, cheaper (~70% less), better CORS support (recommended for new projects)</li>
+					<li><strong>REST API</strong> - More features (API keys, usage plans, request validation) but complex CORS configuration</li>
 				</ul>
-				This operation has to be repeated for each method, including the newly created OPTIONS</li>
-				<li>Deploy the API to a stage</li>
-				<li>Check using http://client.cors-api.appspot.com/client that CORS requests have been successfully enabled</li>
-		</ol>
-    </div>
+				<p>Choose HTTP API unless you need REST API-specific features.</p>
+			</div>
+
+			<div class="notebox">
+				<p><strong>Security Note:</strong> Never use <code>Access-Control-Allow-Origin: *</code> with credentials. The CORS specification only allows a single origin value - use dynamic origin validation for multiple domains. See <a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a> and <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for more details.</p>
+			</div>
+
+			<h2>HTTP API (Recommended)</h2>
+
+			<p>HTTP API provides simpler CORS configuration with automatic OPTIONS handling.</p>
+
+			<h3>AWS Console Configuration</h3>
+
+			<ol>
+				<li>Open AWS API Gateway console</li>
+				<li>Create or select HTTP API</li>
+				<li>Go to <strong>CORS</strong> settings</li>
+				<li>Configure:
+					<ul>
+						<li><strong>Access-Control-Allow-Origin</strong>: <code>https://example.com</code></li>
+						<li><strong>Access-Control-Allow-Methods</strong>: <code>GET,POST,PUT,DELETE</code></li>
+						<li><strong>Access-Control-Allow-Headers</strong>: <code>Content-Type,Authorization</code></li>
+						<li><strong>Access-Control-Max-Age</strong>: <code>86400</code></li>
+						<li><strong>Access-Control-Allow-Credentials</strong>: Yes (if needed)</li>
+					</ul>
+				</li>
+				<li>Save</li>
+			</ol>
+
+			<p><strong>That's it!</strong> HTTP API handles OPTIONS preflight requests automatically.</p>
+
+			<h3>AWS SAM / CloudFormation (Recommended)</h3>
+
+			<p>Infrastructure as Code is the recommended approach for production deployments:</p>
+
+			<pre class="code">AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  # HTTP API (Simple, Recommended)
+  MyHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - https://example.com
+          - https://app.example.com
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        MaxAge: 86400
+        AllowCredentials: true
+
+  # Lambda Function
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      InlineCode: |
+        import json
+        def handler(event, context):
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'Success'})
+            }
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /data
+            Method: get</pre>
+
+			<h3>AWS CDK (TypeScript)</h3>
+
+			<pre class="code">import * as cdk from 'aws-cdk-lib';
+import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2-alpha';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+
+export class CorsStack extends cdk.Stack {
+  constructor(scope: cdk.App, id: string) {
+    super(scope, id);
+
+    // HTTP API (Recommended - Simpler)
+    const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
+      apiName: 'my-http-api',
+      corsPreflight: {
+        allowOrigins: [
+          'https://example.com',
+          'https://app.example.com'
+        ],
+        allowMethods: [
+          apigatewayv2.CorsHttpMethod.GET,
+          apigatewayv2.CorsHttpMethod.POST,
+          apigatewayv2.CorsHttpMethod.PUT,
+          apigatewayv2.CorsHttpMethod.DELETE
+        ],
+        allowHeaders: ['Content-Type', 'Authorization'],
+        maxAge: cdk.Duration.days(1),
+        allowCredentials: true
+      }
+    });
+  }
+}</pre>
+
+			<h3>Terraform</h3>
+
+			<pre class="code">resource "aws_apigatewayv2_api" "http_api" {
+  name          = "my-http-api"
+  protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = [
+      "https://example.com",
+      "https://app.example.com"
+    ]
+    allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers     = ["Content-Type", "Authorization"]
+    max_age           = 86400
+    allow_credentials = true
+  }
+}
+
+resource "aws_apigatewayv2_integration" "lambda" {
+  api_id           = aws_apigatewayv2_api.http_api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.my_function.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "get_data" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /data"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}</pre>
+
+			<h2>REST API</h2>
+
+			<p>REST API requires more complex CORS configuration with manual OPTIONS method setup.</p>
+
+			<h3>AWS SAM / CloudFormation</h3>
+
+			<pre class="code">AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowOrigin: "'https://example.com'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        MaxAge: "'86400'"
+        AllowCredentials: true
+      # Add CORS to error responses
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            gatewayresponse.header.Access-Control-Allow-Origin: "'https://example.com'"
+            gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            gatewayresponse.header.Access-Control-Allow-Origin: "'https://example.com'"
+            gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      InlineCode: |
+        import json
+        def handler(event, context):
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'Success'})
+            }
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyRestApi
+            Path: /data
+            Method: get</pre>
+
+			<h3>AWS CDK (TypeScript)</h3>
+
+			<pre class="code">import * as cdk from 'aws-cdk-lib';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+
+export class CorsStack extends cdk.Stack {
+  constructor(scope: cdk.App, id: string) {
+    super(scope, id);
+
+    // REST API (More Features)
+    const restApi = new apigateway.RestApi(this, 'RestApi', {
+      restApiName: 'my-rest-api',
+      defaultCorsPreflightOptions: {
+        allowOrigins: [
+          'https://example.com',
+          'https://app.example.com'
+        ],
+        allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowHeaders: ['Content-Type', 'Authorization'],
+        maxAge: cdk.Duration.days(1),
+        allowCredentials: true
+      }
+    });
+
+    // Lambda integration
+    const handler = new lambda.Function(this, 'Handler', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      code: lambda.Code.fromInline(`
+import json
+def handler(event, context):
+    return {
+        'statusCode': 200,
+        'body': json.dumps({'message': 'Success'})
+    }
+      `),
+      handler: 'index.handler'
+    });
+
+    const resource = restApi.root.addResource('data');
+    resource.addMethod('GET', new apigateway.LambdaIntegration(handler));
+  }
+}</pre>
+
+			<h3>Terraform</h3>
+
+			<pre class="code">resource "aws_api_gateway_rest_api" "rest_api" {
+  name = "my-rest-api"
+}
+
+resource "aws_api_gateway_resource" "resource" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  parent_id   = aws_api_gateway_rest_api.rest_api.root_resource_id
+  path_part   = "data"
+}
+
+# OPTIONS method for preflight
+resource "aws_api_gateway_method" "options" {
+  rest_api_id   = aws_api_gateway_rest_api.rest_api.id
+  resource_id   = aws_api_gateway_resource.resource.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  resource_id = aws_api_gateway_resource.resource.id
+  http_method = aws_api_gateway_method.options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_200" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  resource_id = aws_api_gateway_resource.resource.id
+  http_method = aws_api_gateway_method.options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_200" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  resource_id = aws_api_gateway_resource.resource.id
+  http_method = aws_api_gateway_method.options.http_method
+  status_code = aws_api_gateway_method_response.options_200.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://example.com'"
+  }
+}</pre>
+
+			<h2>Lambda Function CORS Handling</h2>
+
+			<p>For advanced scenarios, handle CORS in your Lambda function for complete control:</p>
+
+			<h3>Python Lambda</h3>
+
+			<pre class="code">import json
+
+def lambda_handler(event, context):
+    # Get origin from request
+    origin = event.get('headers', {}).get('origin', '')
+
+    # Validate origin
+    allowed_origins = [
+        'https://example.com',
+        'https://app.example.com'
+    ]
+
+    cors_headers = {}
+    if origin in allowed_origins:
+        cors_headers = {
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+            'Access-Control-Max-Age': '86400',
+            'Access-Control-Allow-Credentials': 'true',
+            'Vary': 'Origin'
+        }
+
+    # Handle preflight
+    request_context = event.get('requestContext', {})
+    http_method = request_context.get('http', {}).get('method') or request_context.get('httpMethod')
+
+    if http_method == 'OPTIONS':
+        return {
+            'statusCode': 204,
+            'headers': cors_headers,
+            'body': ''
+        }
+
+    # Handle actual request
+    return {
+        'statusCode': 200,
+        'headers': {
+            **cors_headers,
+            'Content-Type': 'application/json'
+        },
+        'body': json.dumps({'message': 'Success'})
+    }</pre>
+
+			<h3>Node.js Lambda</h3>
+
+			<pre class="code">exports.handler = async (event) => {
+    const origin = event.headers?.origin || '';
+
+    const allowedOrigins = [
+        'https://example.com',
+        'https://app.example.com'
+    ];
+
+    const corsHeaders = {};
+    if (allowedOrigins.includes(origin)) {
+        corsHeaders['Access-Control-Allow-Origin'] = origin;
+        corsHeaders['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS';
+        corsHeaders['Access-Control-Allow-Headers'] = 'Content-Type,Authorization';
+        corsHeaders['Access-Control-Max-Age'] = '86400';
+        corsHeaders['Access-Control-Allow-Credentials'] = 'true';
+        corsHeaders['Vary'] = 'Origin';
+    }
+
+    // Handle preflight
+    const httpMethod = event.requestContext?.http?.method ||
+                      event.requestContext?.httpMethod;
+
+    if (httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 204,
+            headers: corsHeaders,
+            body: ''
+        };
+    }
+
+    // Handle actual request
+    return {
+        statusCode: 200,
+        headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: 'Success' })
+    };
+};</pre>
+
+			<h2>Common Pitfalls</h2>
+
+			<h3>Pitfall 1: Forgetting to Deploy</h3>
+
+			<p>After making CORS changes in the console for REST APIs, you MUST deploy:</p>
+
+			<pre class="code">aws apigateway create-deployment \
+  --rest-api-id YOUR_API_ID \
+  --stage-name prod</pre>
+
+			<h3>Pitfall 2: Missing CORS on Error Responses</h3>
+
+			<p>REST API only adds CORS headers to 200 responses by default. Configure gateway responses for error codes:</p>
+
+			<pre class="code"># SAM template
+GatewayResponses:
+  DEFAULT_4XX:
+    ResponseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'https://example.com'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type'"
+  DEFAULT_5XX:
+    ResponseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'https://example.com'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type'"</pre>
+
+			<h3>Pitfall 3: Credentials with Wildcard</h3>
+
+			<p>This combination is <strong>INVALID</strong> per CORS specification:</p>
+
+			<pre class="code"># INVALID - Will fail in browsers
+AllowOrigin: "'*'"
+AllowCredentials: true</pre>
+
+			<p>Must use specific origin:</p>
+
+			<pre class="code"># VALID
+AllowOrigin: "'https://example.com'"
+AllowCredentials: true</pre>
+
+			<h2>HTTP API vs REST API Feature Comparison</h2>
+
+			<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+				<thead>
+					<tr style="background: #f0f0f0;">
+						<th style="border: 1px solid #ddd; padding: 8px;">Feature</th>
+						<th style="border: 1px solid #ddd; padding: 8px;">HTTP API</th>
+						<th style="border: 1px solid #ddd; padding: 8px;">REST API</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td style="border: 1px solid #ddd; padding: 8px;">CORS Configuration</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Simple, built-in</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Complex, manual OPTIONS</td>
+					</tr>
+					<tr>
+						<td style="border: 1px solid #ddd; padding: 8px;">Price</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Cheaper (~70% less)</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">More expensive</td>
+					</tr>
+					<tr>
+						<td style="border: 1px solid #ddd; padding: 8px;">Latency</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Lower</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Higher</td>
+					</tr>
+					<tr>
+						<td style="border: 1px solid #ddd; padding: 8px;">API Keys</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">No</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Yes</td>
+					</tr>
+					<tr>
+						<td style="border: 1px solid #ddd; padding: 8px;">Usage Plans</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">No</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Yes</td>
+					</tr>
+					<tr>
+						<td style="border: 1px solid #ddd; padding: 8px;">Request Validation</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">No</td>
+						<td style="border: 1px solid #ddd; padding: 8px;">Yes</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h2>Testing Your Configuration</h2>
+
+			<h3>Using curl</h3>
+
+			<p>Test preflight request:</p>
+
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type" \
+     -X OPTIONS \
+     -v https://api-id.execute-api.region.amazonaws.com/data</pre>
+
+			<p>Test actual request:</p>
+
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -v https://api-id.execute-api.region.amazonaws.com/data</pre>
+
+			<h3>Browser DevTools</h3>
+
+			<ol>
+				<li>Open browser console (F12)</li>
+				<li>Go to Network tab</li>
+				<li>Make request to your API endpoint</li>
+				<li>Check for OPTIONS preflight request</li>
+				<li>Verify CORS headers in response</li>
+				<li>Check Console tab for CORS errors</li>
+			</ol>
+
+			<h3>Automated Testing</h3>
+
+			<pre class="code">// Jest test
+test('API Gateway CORS', async () => {
+  const response = await fetch(API_URL, {
+    method: 'GET',
+    headers: {
+      'Origin': 'https://example.com'
+    }
+  });
+
+  expect(response.headers.get('Access-Control-Allow-Origin'))
+    .toBe('https://example.com');
+});</pre>
+
+			<h2>Monitoring and Debugging</h2>
+
+			<h3>Enable CloudWatch Logs</h3>
+
+			<pre class="code"># For HTTP API
+aws apigatewayv2 update-stage \
+  --api-id YOUR_API_ID \
+  --stage-name '$default' \
+  --access-log-settings DestinationArn=arn:aws:logs:region:account:log-group:name
+
+# View logs
+aws logs tail /aws/apigateway/YOUR_API_ID --follow</pre>
+
+			<h3>Check API Configuration</h3>
+
+			<pre class="code"># Get HTTP API details
+aws apigatewayv2 get-api --api-id YOUR_API_ID
+
+# Get REST API details
+aws apigateway get-rest-api --rest-api-id YOUR_API_ID</pre>
+
+			<h2>Additional Resources</h2>
+
+			<ul>
+				<li><a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html">AWS HTTP API Documentation</a></li>
+				<li><a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/rest-api.html">AWS REST API Documentation</a></li>
+				<li><a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html">AWS API Gateway CORS Configuration</a></li>
+				<li><a href="https://docs.aws.amazon.com/serverless-application-model/">AWS SAM Documentation</a></li>
+				<li><a href="https://docs.aws.amazon.com/cdk/">AWS CDK Documentation</a></li>
+			</ul>
+		</section>
+
+	</div>
