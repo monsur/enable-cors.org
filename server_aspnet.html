@@ -7,55 +7,208 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on ASP.NET</h1>
 
-<p>
-				If you don't have access to configure IIS, you can still add the header through ASP.NET by adding the following line to your source pages:
-			</p>
-			<pre class="code">Response.AppendHeader("Access-Control-Allow-Origin", "*");</pre>
-			<p class="note">
-				Note: this approach is compatible with IIS6, IIS7 Classic Mode, and IIS7 Integrated Mode.
-			</p>
+		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+			<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your API. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+		</div>
 
-<h2>ASP.NET Web API</h2>
+		<div class="info" style="background: #d1ecf1; border: 1px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 5px;">
+			<strong>💡 Note:</strong> For new applications, use <strong>ASP.NET Core</strong> which has built-in, modern CORS support. The legacy ASP.NET Framework is in maintenance mode.
+		</div>
 
-<p>ASP.NET Web API 2 supports CORS.</p>
+		<h2>ASP.NET Core (Recommended for New Projects)</h2>
+		<p>ASP.NET Core has first-class CORS support built-in. This is the recommended approach for all new .NET applications.</p>
 
-<p>To enable CORS support, add the <a href="http://www.nuget.org/packages/Microsoft.AspNet.WebApi.Cors">Microsoft.AspNet.WebApi.Cors</a> NuGet package to your project.</p>
+		<h3>Method 1: Specific Origin (Recommended)</h3>
+		<pre class="code">// Program.cs (ASP.NET Core 6+)
+var builder = WebApplication.CreateBuilder(args);
 
-<p>Add this code to your configuration:</p>
-
-<pre class="code">
-public static void Register(HttpConfiguration config)
+// Add CORS policy
+builder.Services.AddCors(options =>
 {
-    // New code
-    config.EnableCors();
-}
-</pre>
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("https://example.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
-<p>To enable cross-origin requests, add the [EnableCors] attribute to your Web API controller or controller method:</p>
+builder.Services.AddControllers();
 
-<pre class="code">
-[EnableCors(origins: "http://example.com", headers: "*", methods: "*")]
+var app = builder.Build();
+
+// Enable CORS middleware
+app.UseCors();
+
+app.MapControllers();
+app.Run();</pre>
+
+		<h3>Method 2: Multiple Origins</h3>
+		<p>Allow multiple specific origins (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+		<pre class="code">builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+            "https://example.com",
+            "https://app.example.com",
+            "https://admin.example.com"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+    });
+});</pre>
+
+		<h3>Method 3: With Credentials</h3>
+		<pre class="code">builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("https://example.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); // Enable credentials
+    });
+});</pre>
+
+		<h3>Method 4: Named Policies</h3>
+		<p>Define different policies for different endpoints:</p>
+		<pre class="code">builder.Services.AddCors(options =>
+{
+    // Restricted policy for APIs
+    options.AddPolicy("ApiPolicy", policy =>
+    {
+        policy.WithOrigins("https://example.com")
+              .WithMethods("GET", "POST")
+              .WithHeaders("Content-Type", "Authorization")
+              .AllowCredentials();
+    });
+
+    // Open policy for public endpoints
+    options.AddPolicy("PublicPolicy", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .WithMethods("GET")
+              .AllowAnyHeader();
+    });
+});
+
+// Apply to specific endpoints
+app.MapControllers().RequireCors("ApiPolicy");</pre>
+
+		<h3>Method 5: Per-Controller/Action</h3>
+		<pre class="code">using Microsoft.AspNetCore.Cors;
+
+[ApiController]
+[Route("api/[controller]")]
+[EnableCors("ApiPolicy")] // Apply to controller
+public class DataController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult Get()
+    {
+        return Ok(new { message = "CORS enabled" });
+    }
+
+    [HttpPost]
+    [EnableCors("PublicPolicy")] // Override for specific action
+    public IActionResult Post([FromBody] Data data)
+    {
+        return Ok(data);
+    }
+}</pre>
+
+		<hr style="margin: 40px 0;">
+
+		<h2>ASP.NET Framework (Legacy)</h2>
+		<p>For applications still using ASP.NET Framework (not Core):</p>
+
+		<h3>ASP.NET Web API 2</h3>
+		<p>Install the NuGet package:</p>
+		<pre class="code">Install-Package Microsoft.AspNet.WebApi.Cors</pre>
+
+		<p>Enable in WebApiConfig.cs:</p>
+		<pre class="code">public static class WebApiConfig
+{
+    public static void Register(HttpConfiguration config)
+    {
+        // Enable CORS
+        var corsAttr = new EnableCorsAttribute(
+            origins: "https://example.com",
+            headers: "*",
+            methods: "*"
+        );
+        config.EnableCors(corsAttr);
+
+        // Other Web API configuration...
+        config.MapHttpAttributeRoutes();
+    }
+}</pre>
+
+		<p>Or use the attribute on controllers:</p>
+		<pre class="code">[EnableCors(origins: "https://example.com", headers: "*", methods: "*")]
 public class TestController : ApiController
 {
-    // Controller methods not shown...
-}
-</pre>
+    public IHttpActionResult Get()
+    {
+        return Ok(new { message = "CORS enabled" });
+    }
+}</pre>
 
-<h3>Enabling Globally</h3>
+		<h3>ASP.NET Web Forms / MVC (Without Web API)</h3>
+		<p>If you don't have access to configure IIS, add headers in Global.asax or page code:</p>
 
-<p>The method described above can also be used to enable CORS across the API without annotating each controller:</p>
-<pre class="code">
-public static void Register(HttpConfiguration config)
+		<pre class="code">// Global.asax.cs
+protected void Application_BeginRequest(object sender, EventArgs e)
 {
-    var corsAttr = new EnableCorsAttribute("http://example.com", "*", "*");
-    config.EnableCors(corsAttr);
-}
-</pre>
+    string origin = Request.Headers["Origin"];
+    string[] allowedOrigins = {
+        "https://example.com",
+        "https://app.example.com"
+    };
 
-<p>For more information, see the official <a href="http://www.asp.net/web-api/overview/security/enabling-cross-origin-requests-in-web-api">Web API documentation</a>.</p>
+    if (allowedOrigins.Contains(origin))
+    {
+        Response.AppendHeader("Access-Control-Allow-Origin", origin);
+        Response.AppendHeader("Vary", "Origin");
+        Response.AppendHeader("Access-Control-Allow-Credentials", "true");
+    }
 
-<h2>Libraries</h2>
-		<ul><li>The open source Thinktecture.IdentityModel security library contains a full-featured CORS implementation. Here is the <a href="http://brockallen.com/2012/06/28/cors-support-in-webapi-mvc-and-iis-with-thinktecture-identitymodel/">announcement page</a> with some samples. Here is the source for <a href="https://github.com/thinktecture/Thinktecture.IdentityModel.45">.NET 4.5</a> and for <a href="https://github.com/thinktecture/Thinktecture.IdentityModel.40">.NET 4.0</a>. Both are packaged into a <a href="http://nuget.org/packages/Thinktecture.IdentityModel">Nuget package</a> downloadable from Visual Studio.</li></ul>
+    Response.AppendHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    Response.AppendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    // Handle preflight
+    if (Request.HttpMethod == "OPTIONS")
+    {
+        Response.AppendHeader("Access-Control-Max-Age", "86400");
+        Response.StatusCode = 204;
+        Response.End();
+    }
+}</pre>
+
+		<p>Or in individual pages:</p>
+		<pre class="code">// In Page_Load or button click handler
+Response.AppendHeader("Access-Control-Allow-Origin", "https://example.com");</pre>
+
+		<p class="note">
+			Note: This approach is compatible with IIS6, IIS7 Classic Mode, and IIS7 Integrated Mode.
+		</p>
+
+		<h2>Testing Your Configuration</h2>
+		<pre class="code"># Test actual request
+curl -H "Origin: https://example.com" \
+     http://localhost:5000/api/data
+
+# Test preflight
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     http://localhost:5000/api/data</pre>
+
+		<p class="note">
+			<strong>Recommendation:</strong> For new applications, use ASP.NET Core which has superior CORS support. For more information, see the official <a href="https://docs.microsoft.com/aspnet/core/security/cors">ASP.NET Core CORS documentation</a> and legacy <a href="https://docs.microsoft.com/aspnet/web-api/overview/security/enabling-cross-origin-requests-in-web-api">Web API 2 documentation</a>.
+		</p>
+
 		</section>
 	</div>
 
