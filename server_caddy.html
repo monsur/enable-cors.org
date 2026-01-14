@@ -6,32 +6,238 @@ title: enable cross-origin resource sharing on caddyserver
 <div class="container">
 	<section>
     <h1>CORS on Caddyserver version 1</h1>
+
+    <div class="warning">
+      <p>
+        <strong>⚠️ NOTE:</strong> You are viewing documentation for <strong>Caddy v1</strong> (legacy version).
+        Caddy v2 is the current version with different syntax.
+        For Caddy v2, see: <a href="server_caddy2.html">Caddy v2 CORS Configuration</a>
+      </p>
+    </div>
+
+    <h2>Quick Start</h2>
     <p>
-      To add the CORS authorization to the header using Caddy 1, simply add the following line inside your caddyfile:
+      To add CORS authorization to the header using Caddy 1, add the following line inside your Caddyfile:
   	</p>
   	<pre class="code">cors</pre>
+
+    <div class="warning">
+      <p>
+        <strong>⚠️ Security Warning:</strong> The simple <code>cors</code> directive allows <strong>ALL</strong> origins to access
+        your resources. Only use this for completely public APIs. For production applications,
+        always specify allowed origins explicitly.
+      </p>
+    </div>
+
+    <h2>Configuration Examples</h2>
+
+    <h3>Development Only (Open CORS)</h3>
     <p>
-      This will allow <b>all</b> resources to be accessed from <b>every</b> domain.
+      Use this only for development and testing. <strong>DO NOT use in production.</strong>
     </p>
+    <pre class="code">
+# DEVELOPMENT ONLY - Allows all origins
+# DO NOT use in production
+example.com {
+  cors
+  # Your other directives...
+}</pre>
+
+    <h3>Production (Secure Configuration)</h3>
     <p>
-      You can also be more specific, i.e. allow specific resources to specific domains:
+      For production environments, always specify allowed origins explicitly and enable credentials if needed:
     </p>
-  	<pre class="code">cors /foo http://mysite.com http://anothertrustedsite.com</pre>
+    <pre class="code">
+# PRODUCTION - Secure configuration
+example.com {
+  # Allow specific origins only
+  cors / {
+    origin            https://example.com
+    origin            https://app.example.com
+    methods           GET,POST,PUT,DELETE,OPTIONS
+    allowed_headers   Content-Type,Authorization,X-Requested-With
+    exposed_headers   Content-Length,X-Custom-Header
+    allow_credentials true
+    max_age           86400
+  }
+
+  # Your other directives...
+  proxy / localhost:8080
+}</pre>
+
+    <h3>Path-Specific CORS</h3>
     <p>
-      There are many more options you can use, here is a full example, as shown in the
-      <a href="https://caddyserver.com/docs/cors" target="_blank">caddyserver docs</a>:
+      Apply different CORS policies to different paths:
+    </p>
+  	<pre class="code">
+example.com {
+  # Public endpoints - no CORS restrictions
+  cors /public {
+    origin *
+  }
+
+  # Authenticated API - strict CORS
+  cors /api {
+    origin            https://example.com
+    allow_credentials true
+    methods           GET,POST,PUT,DELETE
+    allowed_headers   Content-Type,Authorization
+    max_age           3600
+  }
+
+  # Your backend
+  proxy / localhost:8080
+}</pre>
+
+    <h2>Configuration Parameters</h2>
+    <table class="reference">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Description</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>origin</code></td>
+          <td>Allowed origins (can specify multiple). Use specific domains for production.</td>
+          <td><code>https://example.com</code></td>
+        </tr>
+        <tr>
+          <td><code>methods</code></td>
+          <td>Allowed HTTP methods</td>
+          <td><code>GET,POST,PUT,DELETE</code></td>
+        </tr>
+        <tr>
+          <td><code>allowed_headers</code></td>
+          <td>Headers the client can send in requests</td>
+          <td><code>Content-Type,Authorization</code></td>
+        </tr>
+        <tr>
+          <td><code>exposed_headers</code></td>
+          <td>Headers the client can read from responses</td>
+          <td><code>Content-Length,X-Custom</code></td>
+        </tr>
+        <tr>
+          <td><code>allow_credentials</code></td>
+          <td>Allow cookies and authentication. Set to <code>true</code> for authenticated APIs.</td>
+          <td><code>true</code> or <code>false</code></td>
+        </tr>
+        <tr>
+          <td><code>max_age</code></td>
+          <td>Preflight cache duration in seconds (86400 = 24 hours)</td>
+          <td><code>86400</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Choosing the Right Configuration</h2>
+    <h3>Use Simple <code>cors</code> When:</h3>
+    <ul>
+      <li>Working in a development/testing environment only</li>
+      <li>Building a completely public API with no sensitive data</li>
+      <li>Resources are safe for any website to access</li>
+    </ul>
+
+    <h3>Use Full Configuration When:</h3>
+    <ul>
+      <li>Running in production environment</li>
+      <li>Building authenticated or sensitive APIs</li>
+      <li>Need to control which sites can access your API</li>
+      <li>Using cookies or authentication headers</li>
+    </ul>
+
+    <h2>Important Notes</h2>
+    <ul>
+      <li>
+        <strong>Credentials and Origins:</strong> When <code>allow_credentials</code> is <code>true</code>,
+        you MUST specify exact origins (cannot use wildcard <code>*</code>)
+      </li>
+      <li>
+        <strong>Automatic Features:</strong> Caddy's CORS middleware automatically handles:
+        <ul>
+          <li>OPTIONS preflight requests</li>
+          <li><code>Vary: Origin</code> header for proper caching</li>
+          <li>Header validation and credentials checking</li>
+        </ul>
+      </li>
+      <li>
+        <strong>HTTPS Best Practice:</strong> Always use HTTPS origins in production (<code>https://</code>)
+        rather than HTTP (<code>http://</code>) for security
+      </li>
+    </ul>
+
+    <h2>Testing Your Configuration</h2>
+    <p>
+      Test with curl to verify CORS headers:
+    </p>
+    <pre class="code">
+# Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type" \
+     -X OPTIONS \
+     -v https://your-caddy-site.com/api/endpoint
+
+# Test actual request
+curl -H "Origin: https://example.com" \
+     -X GET \
+     -v https://your-caddy-site.com/api/data</pre>
+
+    <p>
+      Or test with JavaScript in the browser console:
+    </p>
+    <pre class="code">
+fetch('https://your-caddy-site.com/api/data', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  credentials: 'include', // If using credentials
+  body: JSON.stringify({test: 'data'})
+})
+.then(r => r.json())
+.then(console.log)
+.catch(console.error);</pre>
+
+    <h2>Troubleshooting</h2>
+    <h3>CORS errors despite configuration:</h3>
+    <ul>
+      <li>Verify Caddyfile syntax has no errors on startup</li>
+      <li>Check that the <code>cors</code> directive is in the correct block</li>
+      <li>Ensure HTTPS is used for origins if your site uses HTTPS</li>
+    </ul>
+
+    <h3>Preflight failing:</h3>
+    <ul>
+      <li>Verify all required methods are listed in <code>methods</code></li>
+      <li>Check that headers match exactly in <code>allowed_headers</code></li>
+      <li>Confirm origin exactly matches (including protocol)</li>
+    </ul>
+
+    <h3>Credentials not working:</h3>
+    <ul>
+      <li>Set <code>allow_credentials true</code></li>
+      <li>Cannot use wildcard (<code>*</code>) origin with credentials</li>
+      <li>Ensure frontend sends <code>credentials: 'include'</code> in fetch requests</li>
+    </ul>
+
+    <h2>Upgrading to Caddy v2</h2>
+    <p>
+      Caddy v2 offers better performance, improved configuration, and active security updates.
+      Note that v2 uses different syntax (the <code>header</code> directive instead of <code>cors</code> middleware).
+      See the <a href="server_caddy2.html">Caddy v2 CORS Configuration</a> page for current syntax,
+      or consult the <a href="https://caddyserver.com/docs/v2-upgrade" target="_blank">Caddy v1 to v2 Migration Guide</a>.
     </p>
 
-  	<pre class="code">
-cors / {
-  origin            http://allowedSite.com
-  origin            http://anotherSite.org https://anotherSite.org
-  methods           POST,PUT
-  allow_credentials false
-  max_age           3600
-  allowed_headers   X-Custom-Header,X-Foobar
-  exposed_headers   X-Something-Special,SomethingElse
-}</pre>
+    <h2>Related Resources</h2>
+    <ul>
+      <li><a href="https://caddyserver.com/docs/cors" target="_blank">Caddy v1 CORS Documentation</a> (archived)</li>
+      <li><a href="https://caddyserver.com/docs/" target="_blank">Caddy v2 Documentation</a></li>
+      <li><a href="https://caddyserver.com/docs/v2-upgrade" target="_blank">Caddy v1 to v2 Migration Guide</a></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS" target="_blank">MDN Web Docs: CORS</a></li>
+    </ul>
 
   </section>
 </div>
