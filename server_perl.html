@@ -7,19 +7,338 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS in Perl PSGI scripts</h1>
 
-<p>The module <a
-href="https://metacpan.org/module/Plack::Middleware::CrossOrigin">Plack::Middleware::CrossOrigin</a>
-provides a complete CORS server side implementation. To allow any
-request from any location, just add this to your builder:
-</p>
+<p>The <a href="https://metacpan.org/pod/Plack::Middleware::CrossOrigin">Plack::Middleware::CrossOrigin</a> module provides a complete CORS server-side implementation for PSGI/Plack applications. Below are secure, modern examples for implementing CORS in Perl.</p>
 
-<pre class="code">
-    enable 'CrossOrigin', origins => '*';
-</pre>
+<div class="notebox">
+	<p><strong>Security Warning:</strong> Using <code>origins => '*'</code> allows ANY website to access your resources. Only use this for completely public APIs. For production applications, always specify allowed origins explicitly using a space-separated string or regex pattern.</p>
+</div>
 
-<p>This module is also available in Debian and Ubuntu as libplack-middleware-crossorigin-perl.</p>
+<h2>Installation</h2>
 
-<p>For other Perl-related uses see <a href="server_cgi.html">the CGI page</a>.</p>	
+<p>Install the module using your preferred method:</p>
+
+<pre class="code"># CPAN
+cpan Plack::Middleware::CrossOrigin
+
+# cpanm
+cpanm Plack::Middleware::CrossOrigin
+
+# Debian/Ubuntu
+apt-get install libplack-middleware-crossorigin-perl</pre>
+
+<h2>Method 1: Secure Origin List (Recommended)</h2>
+
+<p>Specify a space-separated list of allowed origins:</p>
+
+<pre class="code">#!/usr/bin/env perl
+use Plack::Builder;
+
+my $app = sub {
+    my $env = shift;
+    return [ 200, [ 'Content-Type' => 'application/json' ],
+             [ '{"message":"CORS enabled"}' ] ];
+};
+
+builder {
+    # Recommended: Specific origins
+    enable 'CrossOrigin',
+        origins => 'https://example.com https://app.example.com',
+        methods => ['GET', 'POST', 'PUT', 'DELETE'],
+        headers => ['Content-Type', 'Authorization'],
+        max_age => 86400;
+
+    $app;
+};</pre>
+
+<h2>Method 2: Regex-Based Origin Matching</h2>
+
+<p>Use regex patterns to match multiple subdomains:</p>
+
+<pre class="code">use Plack::Builder;
+
+my $app = sub {
+    return [ 200, [ 'Content-Type' => 'text/plain' ], [ 'Hello' ] ];
+};
+
+builder {
+    # Match origins using regex
+    enable 'CrossOrigin',
+        origins => qr{^https?://(.+\.)?example\.com$},
+        credentials => 1,
+        methods => ['GET', 'POST', 'PUT', 'DELETE'],
+        headers => ['Content-Type', 'Authorization'];
+
+    $app;
+};</pre>
+
+<h2>Method 3: Full Configuration</h2>
+
+<p>Example with all available configuration options:</p>
+
+<pre class="code">use Plack::Builder;
+
+my $app = sub {
+    my $env = shift;
+    return [
+        200,
+        [ 'Content-Type' => 'application/json' ],
+        [ '{"status":"success"}' ]
+    ];
+};
+
+builder {
+    enable 'CrossOrigin',
+        # Allowed origins (space-separated string or regex)
+        origins => 'https://example.com https://app.example.com',
+
+        # Allowed HTTP methods
+        methods => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+
+        # Allowed request headers
+        headers => ['Content-Type', 'Authorization', 'X-Requested-With'],
+
+        # Exposed response headers
+        expose_headers => ['Content-Length', 'X-Custom-Header'],
+
+        # Allow credentials (cookies, HTTP auth)
+        credentials => 1,
+
+        # Preflight cache duration (seconds)
+        max_age => 86400; # 24 hours
+
+    $app;
+};</pre>
+
+<h2>Method 4: Environment-Based Configuration</h2>
+
+<p>Configure different origins for development and production:</p>
+
+<pre class="code">use Plack::Builder;
+
+my $app = sub { [ 200, [], [ 'OK' ] ] };
+
+# Get environment
+my $env_name = $ENV{PLACK_ENV} || 'development';
+
+builder {
+    if ($env_name eq 'development') {
+        # Development - allow localhost
+        enable 'CrossOrigin',
+            origins => 'http://localhost:3000 http://localhost:8080';
+    } else {
+        # Production - strict origins
+        enable 'CrossOrigin',
+            origins => 'https://example.com https://app.example.com',
+            credentials => 1,
+            max_age => 86400;
+    }
+
+    $app;
+};</pre>
+
+<h2>Method 5: Path-Specific CORS</h2>
+
+<p>Apply different CORS policies to different API paths:</p>
+
+<pre class="code">use Plack::Builder;
+
+my $app = sub {
+    my $env = shift;
+    my $path = $env->{PATH_INFO};
+
+    if ($path eq '/api/data') {
+        return [ 200, [ 'Content-Type' => 'application/json' ],
+                 [ '{"data":"value"}' ] ];
+    }
+
+    return [ 404, [ 'Content-Type' => 'text/plain' ], [ 'Not Found' ] ];
+};
+
+builder {
+    # Public API - open CORS
+    mount '/public' => builder {
+        enable 'CrossOrigin', origins => '*';
+        $app;
+    };
+
+    # Private API - restricted CORS
+    mount '/api' => builder {
+        enable 'CrossOrigin',
+            origins => 'https://example.com',
+            credentials => 1;
+        $app;
+    };
+};</pre>
+
+<h2>Method 6: Manual Implementation (Without Middleware)</h2>
+
+<p>For complete control, implement CORS manually:</p>
+
+<pre class="code">use Plack::Builder;
+use Plack::Request;
+
+my @ALLOWED_ORIGINS = (
+    'https://example.com',
+    'https://app.example.com'
+);
+
+my $app = sub {
+    my $env = shift;
+    my $req = Plack::Request->new($env);
+    my $origin = $req->header('Origin') || '';
+
+    # Check if origin is allowed
+    my $origin_allowed = grep { $_ eq $origin } @ALLOWED_ORIGINS;
+
+    # Handle preflight OPTIONS request
+    if ($req->method eq 'OPTIONS') {
+        my @headers = (
+            'Content-Type' => 'text/plain',
+        );
+
+        if ($origin_allowed) {
+            push @headers,
+                'Access-Control-Allow-Origin' => $origin,
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, Authorization',
+                'Access-Control-Max-Age' => '86400',
+                'Vary' => 'Origin';
+        }
+
+        return [ 204, \@headers, [] ];
+    }
+
+    # Handle actual request
+    my @response_headers = ( 'Content-Type' => 'application/json' );
+
+    if ($origin_allowed) {
+        push @response_headers,
+            'Access-Control-Allow-Origin' => $origin,
+            'Access-Control-Allow-Credentials' => 'true',
+            'Vary' => 'Origin';
+    }
+
+    return [
+        200,
+        \@response_headers,
+        [ '{"message":"Manual CORS implementation"}' ]
+    ];
+};</pre>
+
+<h2>Configuration Reference</h2>
+
+<table>
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Type</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>origins</code></td>
+			<td>String or Regex</td>
+			<td>Allowed origins (space-separated string like <code>'https://example.com'</code> or regex like <code>qr{^https://.*\.example\.com$}</code>)</td>
+		</tr>
+		<tr>
+			<td><code>methods</code></td>
+			<td>ArrayRef</td>
+			<td>Allowed HTTP methods (e.g., <code>['GET', 'POST', 'PUT']</code>)</td>
+		</tr>
+		<tr>
+			<td><code>headers</code></td>
+			<td>ArrayRef</td>
+			<td>Allowed request headers (e.g., <code>['Content-Type', 'Authorization']</code>)</td>
+		</tr>
+		<tr>
+			<td><code>expose_headers</code></td>
+			<td>ArrayRef</td>
+			<td>Response headers to expose to client (e.g., <code>['Content-Length']</code>)</td>
+		</tr>
+		<tr>
+			<td><code>credentials</code></td>
+			<td>Boolean</td>
+			<td>Allow credentials (cookies, HTTP auth). Set to <code>1</code> or <code>0</code></td>
+		</tr>
+		<tr>
+			<td><code>max_age</code></td>
+			<td>Integer</td>
+			<td>Preflight cache duration in seconds (e.g., <code>86400</code> for 24 hours)</td>
+		</tr>
+	</tbody>
+</table>
+
+<h2>Framework Integration</h2>
+
+<h3>Dancer2</h3>
+
+<pre class="code">use Dancer2;
+use Plack::Builder;
+
+# Your Dancer2 app
+get '/api/data' => sub {
+    return { message => 'CORS enabled' };
+};
+
+# Wrap with CORS
+builder {
+    enable 'CrossOrigin',
+        origins => 'https://example.com',
+        credentials => 1;
+
+    dance;
+};</pre>
+
+<h3>Mojolicious</h3>
+
+<pre class="code"># Mojolicious has built-in CORS support
+$app->hook(after_build_tx => sub {
+    my $tx = shift;
+    $tx->res->headers->header('Access-Control-Allow-Origin' => 'https://example.com');
+});</pre>
+
+<h2>Deployment</h2>
+
+<p>Run your PSGI application with plackup or Starman:</p>
+
+<pre class="code"># Development
+plackup app.psgi
+
+# Production with Starman
+starman --workers 10 --port 5000 app.psgi
+
+# With environment
+PLACK_ENV=production starman app.psgi</pre>
+
+<h2>Testing CORS</h2>
+
+<p>Test your CORS configuration with curl:</p>
+
+<pre class="code"># Test preflight request
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type" \
+     -X OPTIONS \
+     -v http://localhost:5000/
+
+# Test actual request
+curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     -X POST \
+     -d '{"test":"data"}' \
+     -v http://localhost:5000/</pre>
+
+<h2>Additional Resources</h2>
+
+<ul>
+	<li><a href="https://metacpan.org/pod/Plack::Middleware::CrossOrigin">Plack::Middleware::CrossOrigin Documentation</a></li>
+	<li><a href="https://metacpan.org/pod/Plack">Plack Documentation</a></li>
+	<li><a href="https://metacpan.org/pod/PSGI">PSGI Specification</a></li>
+	<li><a href="https://github.com/plack/Plack">Plack GitHub Repository</a></li>
+	<li><a href="server_cgi.html">CGI CORS Configuration</a> - Legacy Perl CGI approach</li>
+</ul>
+
 </section>
 </div>
 
