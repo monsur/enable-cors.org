@@ -8,19 +8,202 @@ title: enable cross-origin resource sharing
 			<h1>CORS on ColdFusion</h1>
 
 			<p>
-				If you don't have access to configure you web server, you can still send the header from a ColdFusion script. It's a case of adding the following to your ColdFusion scripts:
+				If you don't have access to configure your web server, you can still send CORS headers from a ColdFusion script. This guide shows secure implementations for ColdFusion 11+ and earlier versions.
 			</p>
-			<h2>Tag Based File</h2>
+
+			<p class="warning">
+				<strong>Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows any website to access your API. Always validate origins against a whitelist in production environments.
+			</p>
+
+			<h2>Recommended: Secure Implementation with Origin Validation</h2>
+			<p>
+				This complete example includes origin validation, preflight handling, and proper security headers:
+			</p>
+			<pre class="code">&lt;!--- cors.cfm - Include at top of API pages ---&gt;
+&lt;cfscript&gt;
+allowedOrigins = ["https://example.com", "https://app.example.com"];
+requestOrigin = cgi.HTTP_ORIGIN ?: "";
+
+if (arrayFind(allowedOrigins, requestOrigin)) {
+    cfheader(name="Access-Control-Allow-Origin", value=requestOrigin);
+    cfheader(name="Vary", value="Origin");
+}
+&lt;/cfscript&gt;
+
+&lt;cfif cgi.REQUEST_METHOD eq "OPTIONS"&gt;
+    &lt;cfheader name="Access-Control-Allow-Methods" value="GET, POST, PUT, DELETE, OPTIONS"&gt;
+    &lt;cfheader name="Access-Control-Allow-Headers" value="Content-Type, Authorization"&gt;
+    &lt;cfheader name="Access-Control-Max-Age" value="86400"&gt;
+    &lt;cfheader statusCode="204" statusText="No Content"&gt;
+    &lt;cfabort&gt;
+&lt;/cfif&gt;</pre>
+
+			<h2>Application.cfc Integration</h2>
+			<p>
+				For automatic CORS handling across your application, add this to your <code>Application.cfc</code>:
+			</p>
+			<pre class="code">component {
+    this.name = "MyApp";
+
+    public boolean function onRequestStart(string targetPage) {
+        // Enable CORS for API routes
+        if (findNoCase("/api/", arguments.targetPage)) {
+            enableCORS();
+        }
+        return true;
+    }
+
+    private void function enableCORS() {
+        var allowedOrigins = [
+            'https://example.com',
+            'https://app.example.com'
+        ];
+        var origin = cgi.HTTP_ORIGIN ?: '';
+
+        if (arrayFind(allowedOrigins, origin)) {
+            cfheader(name="Access-Control-Allow-Origin", value=origin);
+            cfheader(name="Vary", value="Origin");
+        }
+
+        if (cgi.REQUEST_METHOD == "OPTIONS") {
+            cfheader(name="Access-Control-Allow-Methods", value="GET, POST, PUT, DELETE");
+            cfheader(name="Access-Control-Allow-Headers", value="Content-Type, Authorization");
+            cfheader(name="Access-Control-Max-Age", value="86400");
+            cfheader(statusCode="204");
+            abort;
+        }
+    }
+}</pre>
+
+			<h2>Component-Based Implementation (CF11+)</h2>
+			<p>
+				Create a reusable CORS component for modern ColdFusion applications:
+			</p>
+			<pre class="code">&lt;cfscript&gt;
+// CORS Configuration Component
+component {
+    variables.allowedOrigins = [
+        'https://example.com',
+        'https://app.example.com'
+    ];
+
+    public void function enableCORS() {
+        var requestOrigin = cgi.HTTP_ORIGIN ?: '';
+
+        // Validate origin
+        if (arrayFind(variables.allowedOrigins, requestOrigin)) {
+            cfheader(name="Access-Control-Allow-Origin", value=requestOrigin);
+            cfheader(name="Access-Control-Allow-Credentials", value="true");
+            cfheader(name="Vary", value="Origin");
+        }
+
+        // Handle preflight
+        if (cgi.REQUEST_METHOD == "OPTIONS") {
+            cfheader(name="Access-Control-Allow-Methods", value="GET, POST, PUT, DELETE, OPTIONS");
+            cfheader(name="Access-Control-Allow-Headers", value="Content-Type, Authorization");
+            cfheader(name="Access-Control-Max-Age", value="86400");
+            cfheader(statusCode="204", statusText="No Content");
+            abort;
+        }
+    }
+}
+
+// Usage
+cors = new CORSHandler();
+cors.enableCORS();
+
+// Your application logic here
+writeOutput(serializeJSON({
+    'status': 'success',
+    'message': 'CORS enabled'
+}));
+&lt;/cfscript&gt;</pre>
+
+			<h2>REST API Integration</h2>
+			<p>
+				For ColdFusion REST APIs, integrate CORS in your component methods:
+			</p>
+			<pre class="code">component rest="true" restpath="/api" {
+    remote any function getData() httpmethod="GET" restpath="/data" {
+        enableCORS();
+        return {"data": "value"};
+    }
+
+    private void function enableCORS() {
+        var allowedOrigins = ['https://example.com', 'https://app.example.com'];
+        var origin = cgi.HTTP_ORIGIN ?: '';
+
+        if (arrayFind(allowedOrigins, origin)) {
+            cfheader(name="Access-Control-Allow-Origin", value=origin);
+            cfheader(name="Vary", value="Origin");
+        }
+    }
+}</pre>
+
+			<h2>With Credentials</h2>
+			<p>
+				If your API needs to support cookies or authentication, add the credentials header. Note that you <strong>must</strong> specify an exact origin (not <code>*</code>) when using credentials:
+			</p>
+			<pre class="code">&lt;cfscript&gt;
+allowedOrigins = ["https://example.com"];
+requestOrigin = cgi.HTTP_ORIGIN ?: "";
+
+if (arrayFind(allowedOrigins, requestOrigin)) {
+    cfheader(name="Access-Control-Allow-Origin", value=requestOrigin);
+    cfheader(name="Access-Control-Allow-Credentials", value="true");
+    cfheader(name="Vary", value="Origin");
+}
+&lt;/cfscript&gt;</pre>
+
+			<h2>Simple Implementation (Development Only)</h2>
+			<p>
+				For development environments only, you can use a simple wildcard implementation:
+			</p>
+			<h3>Tag Based File</h3>
 			<pre class="code">&lt;cfheader name="Access-Control-Allow-Origin" value="*"&gt;</pre>
-			<h2>Script Based File</h2>
-			<pre class="code">cfheader( name="Access-Control-Allow-Origin", value="*");</pre>
-			<br>
-			Or for versions of ColdFusion prior to 11:
+			<h3>Script Based File (CF11+)</h3>
+			<pre class="code">cfheader(name="Access-Control-Allow-Origin", value="*");</pre>
+			<h3>Pre-CF11 Versions</h3>
 			<pre class="code">var response = getPageContext().getResponse();
 response.setHeader("Access-Control-Allow-Origin","*");</pre>
+
 			<p class="note">
-				Note: This needs to be set before any output has been sent from the server.
+				<strong>Important:</strong> Headers must be set before any output has been sent from the server.
 			</p>
+
+			<h2>Testing Your Configuration</h2>
+			<p>
+				Test your CORS implementation using curl or browser tools:
+			</p>
+			<h3>Test Preflight Request</h3>
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     -v http://your-cf-server.com/api/endpoint.cfm</pre>
+
+			<h3>Test in Browser Console</h3>
+			<pre class="code">fetch('http://your-cf-server.com/api/endpoint.cfm', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  credentials: 'include',
+  body: JSON.stringify({test: 'data'})
+}).then(r => r.json()).then(console.log);</pre>
+
+			<h2>Version Compatibility</h2>
+			<ul>
+				<li><strong>ColdFusion 11+:</strong> Use modern script syntax with <code>cfheader()</code> function</li>
+				<li><strong>ColdFusion 10 and earlier:</strong> Use <code>getPageContext().getResponse()</code></li>
+				<li><strong>ColdFusion 2016+:</strong> Full support for modern HTTP handling features</li>
+				<li><strong>Lucee:</strong> Open-source alternative with similar syntax support</li>
+			</ul>
+
+			<h2>Resources</h2>
+			<ul>
+				<li><a href="https://helpx.adobe.com/coldfusion/home.html">ColdFusion Documentation</a></li>
+				<li><a href="https://docs.lucee.org/">Lucee Documentation</a></li>
+				<li><a href="server_apache.html">Apache CORS Configuration</a> (often runs ColdFusion)</li>
+				<li><a href="server_iis7.html">IIS CORS Configuration</a> (Windows ColdFusion deployment)</li>
+			</ul>
 
 		</section>
 	</div>
