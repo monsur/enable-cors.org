@@ -8,27 +8,223 @@ title: enable cross-origin resource sharing
 		<h1>CORS on Meteor</h1>
 
 			<p>
-				To add CORS authorization to a <a href="http://www.meteor.com">Meteor</a> application, use the <a href="http://docs.meteor.com/#/full/webapp">webapp</a> package's <code>WebApp.connectHandlers</code> to customize HTTP headers. 
+				<a href="https://www.meteor.com">Meteor</a> is a full-stack JavaScript framework built on Node.js. To add CORS authorization to a Meteor application, use the <a href="https://docs.meteor.com/packages/webapp.html">webapp</a> package's <code>WebApp.rawConnectHandlers</code> to customize HTTP headers.
 			</p>
-      <p>
-        In order for Meteor APIs to work, the client will typically need to send requests with an "Authorization" header, and to request "Content-type: application/json".  The server will need to allow these with an "Access-Control-Allow-Headers" header, as shown below:
-      </p>
-			<pre class="code">// Listen to incoming HTTP requests, can only be used on the server
+
+			<div class="notebox">
+				<p><strong>Security Warning:</strong> Never use <code>Access-Control-Allow-Origin: *</code> in production. Always validate origins against a whitelist of trusted domains. The wildcard pattern exposes your API to any website.</p>
+			</div>
+
+			<h2>Understanding Meteor CORS</h2>
+
+			<p>
+				Meteor uses two different communication protocols:
+			</p>
+			<ul>
+				<li><strong>DDP (Distributed Data Protocol):</strong> WebSocket-based protocol for Meteor Methods and subscriptions. CORS is less relevant for DDP connections.</li>
+				<li><strong>REST/HTTP endpoints:</strong> Traditional HTTP endpoints that require CORS configuration for cross-origin access.</li>
+			</ul>
+
+			<p>
+				The <code>WebApp.rawConnectHandlers</code> middleware affects HTTP requests but not DDP connections. If you're exposing REST APIs alongside your Meteor application, you'll need proper CORS configuration.
+			</p>
+
+			<h2>Secure CORS Implementation</h2>
+
+			<p>Here's a production-ready CORS implementation with origin validation, preflight handling, and proper security headers:</p>
+
+			<pre class="code">// server/cors.js
+import { WebApp } from 'meteor/webapp';
+
+const allowedOrigins = [
+  'https://example.com',
+  'https://app.example.com',
+  'https://admin.example.com'
+];
+
 WebApp.rawConnectHandlers.use(function(req, res, next) {
+  const origin = req.headers.origin;
+
+  // Validate origin against whitelist
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+
+  res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Max-Age", "86400"); // 24 hours
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  next();
+});</pre>
+
+			<h2>Path-Specific CORS</h2>
+
+			<p>You can configure different CORS policies for different API paths using the optional <code>path</code> argument:</p>
+
+			<h3>Public API (Open Access)</h3>
+
+			<pre class="code">// Public API - allows any origin
+WebApp.rawConnectHandlers.use("/api/public", function(req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Max-Age", "86400");
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   return next();
 });</pre>
 
-			<p>
-				Use the optional <code>path</code> argument to only call the handler for paths that match a specified string. 
-			</p>
-			<pre class="code">// Listen to incoming HTTP requests, can only be used on the server
-WebApp.rawConnectHandlers.use("/public", function(req, res, next) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  return next();
+			<h3>Private API (Restricted Access)</h3>
+
+			<pre class="code">// Private API - restricted to specific origins
+const allowedOrigins = [
+  'https://example.com',
+  'https://app.example.com'
+];
+
+WebApp.rawConnectHandlers.use("/api/private", function(req, res, next) {
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
+
+  res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Max-Age", "86400");
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  next();
 });</pre>
-		</section>	
-		
+
+			<h2>Environment-Based Configuration</h2>
+
+			<p>For better security and flexibility, load allowed origins from your Meteor settings:</p>
+
+			<p><strong>settings.json:</strong></p>
+			<pre class="code">{
+  "cors": {
+    "origins": [
+      "https://example.com",
+      "https://app.example.com"
+    ]
+  }
+}</pre>
+
+			<p><strong>server/cors.js:</strong></p>
+			<pre class="code">import { Meteor } from 'meteor/meteor';
+import { WebApp } from 'meteor/webapp';
+
+if (Meteor.isServer) {
+  const allowedOrigins = Meteor.settings.cors?.origins || [];
+
+  WebApp.rawConnectHandlers.use(function(req, res, next) {
+    const origin = req.headers.origin;
+
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+    }
+
+    if (req.method === "OPTIONS") {
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+      res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+      res.setHeader("Access-Control-Max-Age", "86400");
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    next();
+  });
+}</pre>
+
+			<p>Run Meteor with settings:</p>
+			<pre class="code">meteor --settings settings.json</pre>
+
+			<h2>Using Meteor Packages</h2>
+
+			<p>For more advanced use cases, consider using community packages:</p>
+
+			<ul>
+				<li><strong>simple:rest</strong> - Provides REST API capabilities with built-in CORS support</li>
+			</ul>
+
+			<pre class="code">meteor add simple:rest</pre>
+
+			<h2>Understanding Required Headers</h2>
+
+			<p>
+				When making authenticated requests to Meteor APIs, clients typically send:
+			</p>
+			<ul>
+				<li><strong>Authorization:</strong> Bearer tokens or API keys</li>
+				<li><strong>Content-Type:</strong> Usually <code>application/json</code></li>
+			</ul>
+
+			<p>
+				Your server must allow these headers with <code>Access-Control-Allow-Headers</code>. The examples above include these by default.
+			</p>
+
+			<h2>Testing CORS</h2>
+
+			<p>Test CORS with curl:</p>
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -v http://localhost:3000/api/endpoint</pre>
+
+			<p>Test preflight requests:</p>
+			<pre class="code">curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type" \
+     -X OPTIONS \
+     -v http://localhost:3000/api/endpoint</pre>
+
+			<p>Test from browser console:</p>
+			<pre class="code">fetch('http://localhost:3000/api/data', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  credentials: 'include',
+  body: JSON.stringify({test: 'data'})
+}).then(r => r.json()).then(console.log);</pre>
+
+			<h2>Key Security Considerations</h2>
+
+			<ul>
+				<li><strong>Never use wildcards with credentials:</strong> <code>Access-Control-Allow-Origin: *</code> cannot be used with <code>Access-Control-Allow-Credentials: true</code></li>
+				<li><strong>Always validate origins:</strong> Check incoming origins against a whitelist before setting the header</li>
+				<li><strong>Include Vary header:</strong> <code>Vary: Origin</code> is required when dynamically setting <code>Access-Control-Allow-Origin</code> to prevent caching issues</li>
+				<li><strong>Handle preflight requests:</strong> Respond to OPTIONS requests with appropriate headers and a 204 status code</li>
+				<li><strong>Use HTTPS in production:</strong> Only allow HTTPS origins in your whitelist for production environments</li>
+			</ul>
+
+			<h2>Additional Resources</h2>
+
+			<ul>
+				<li><a href="https://docs.meteor.com/packages/webapp.html">Meteor WebApp Documentation</a></li>
+				<li><a href="https://guide.meteor.com/">Meteor Guide</a></li>
+				<li><a href="https://atmospherejs.com/">Atmosphere Package Repository</a></li>
+			</ul>
+		</section>
+
 	</div>
 
