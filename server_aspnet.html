@@ -10,7 +10,7 @@ title: enable cross-origin resource sharing
 		{% include security-warning.html %}
 
 		<div class="info" style="background: #d1ecf1; border: 1px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 5px;">
-			<strong>💡 Note:</strong> For new applications, use <strong>ASP.NET Core</strong> which has built-in, modern CORS support. The legacy ASP.NET Framework is in maintenance mode.
+			<strong>💡 Recommendation:</strong> For new applications, use <strong>ASP.NET Core</strong> which has superior CORS support. The legacy ASP.NET Framework is in maintenance mode. For more information, see the official <a href="https://docs.microsoft.com/aspnet/core/security/cors">ASP.NET Core CORS documentation</a> and legacy <a href="https://docs.microsoft.com/aspnet/web-api/overview/security/enabling-cross-origin-requests-in-web-api">Web API 2 documentation</a>.
 		</div>
 
 		<h2>ASP.NET Core (Recommended for New Projects)</h2>
@@ -193,10 +193,6 @@ Response.AppendHeader("Access-Control-Allow-Origin", "https://example.com");</pr
 		</p>
 
 		{% include testing-link.html %}
-
-		<p class="note">
-			<strong>Recommendation:</strong> For new applications, use ASP.NET Core which has superior CORS support. For more information, see the official <a href="https://docs.microsoft.com/aspnet/core/security/cors">ASP.NET Core CORS documentation</a> and legacy <a href="https://docs.microsoft.com/aspnet/web-api/overview/security/enabling-cross-origin-requests-in-web-api">Web API 2 documentation</a>.
-		</p>
 
 		</section>
 	</div>
