@@ -1,0 +1,240 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+<div class="container">
+  <section>
+    <h1>CORS on F5 BIG-IP</h1>
+
+    {% include security-warning.html %}
+
+    <div class="info" style="background: #d1ecf1; border: 1px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 5px;">
+      <strong>About iRules:</strong> F5 BIG-IP uses iRules (TCL-based scripting) to customize traffic management. These rules can handle CORS headers at the load balancer level before requests reach your backend servers.
+    </div>
+
+    <h2>Method 1: Simple Single Origin with Credentials (Recommended)</h2>
+    <p>For most use cases with authentication/cookies, specify a single trusted origin:</p>
+    <pre class="code">
+when HTTP_REQUEST priority 200 {
+    unset -nocomplain cors_origin
+
+    # Validate against single trusted origin
+    if { [HTTP::header Origin] equals "https://example.com" } {
+        if { ([HTTP::method] equals "OPTIONS") and
+             ([HTTP::header exists "Access-Control-Request-Method"]) } {
+            # Handle preflight request
+            HTTP::respond 200 "Access-Control-Allow-Origin" "https://example.com" \
+                              "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE" \
+                              "Access-Control-Allow-Headers" "Content-Type, Authorization" \
+                              "Access-Control-Allow-Credentials" "true" \
+                              "Access-Control-Max-Age" "86400" \
+                              "Vary" "Origin"
+            return
+        } else {
+            set cors_origin "https://example.com"
+        }
+    }
+}
+
+when HTTP_RESPONSE {
+    if { [info exists cors_origin] } {
+        HTTP::header insert "Access-Control-Allow-Origin" $cors_origin
+        HTTP::header insert "Access-Control-Allow-Credentials" "true"
+        HTTP::header insert "Vary" "Origin"
+    }
+}
+    </pre>
+    <p class="note"><strong>Note:</strong> When using credentials, you <strong>must not</strong> use wildcards (<code>*</code>) for either <code>Access-Control-Allow-Origin</code> or <code>Access-Control-Allow-Headers</code>. Specific values must be provided.</p>
+
+    <h2>Method 2: Multiple Trusted Origins with Credentials</h2>
+    <p>To allow multiple specific origins from the same domain family:</p>
+    <pre class="code">
+when HTTP_REQUEST priority 200 {
+    unset -nocomplain cors_origin
+
+    # Validate against multiple trusted origins
+    if { [HTTP::header Origin] ends_with ".example.com" or
+         [HTTP::header Origin] equals "https://example.com" } {
+        if { ([HTTP::method] equals "OPTIONS") and
+             ([HTTP::header exists "Access-Control-Request-Method"]) } {
+            # Handle preflight - echo back the validated origin
+            HTTP::respond 200 "Access-Control-Allow-Origin" [HTTP::header "Origin"] \
+                              "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE" \
+                              "Access-Control-Allow-Headers" "Content-Type, Authorization, X-Requested-With" \
+                              "Access-Control-Allow-Credentials" "true" \
+                              "Access-Control-Max-Age" "86400" \
+                              "Vary" "Origin"
+            return
+        } else {
+            set cors_origin [HTTP::header "Origin"]
+        }
+    }
+}
+
+when HTTP_RESPONSE {
+    if { [info exists cors_origin] } {
+        HTTP::header insert "Access-Control-Allow-Origin" $cors_origin
+        HTTP::header insert "Access-Control-Allow-Credentials" "true"
+        HTTP::header insert "Vary" "Origin"
+    }
+}
+    </pre>
+
+    <h2>Method 3: Explicit Origin Whitelist</h2>
+    <p>For strict control with a defined list of allowed origins:</p>
+    <pre class="code">
+when HTTP_REQUEST priority 200 {
+    unset -nocomplain cors_origin
+
+    # Define allowed origins
+    set allowed_origins {
+        "https://app.example.com"
+        "https://dashboard.example.com"
+        "https://mobile.example.com"
+    }
+
+    set origin [HTTP::header Origin]
+    if { [lsearch -exact $allowed_origins $origin] >= 0 } {
+        if { ([HTTP::method] equals "OPTIONS") and
+             ([HTTP::header exists "Access-Control-Request-Method"]) } {
+            HTTP::respond 200 "Access-Control-Allow-Origin" $origin \
+                              "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE" \
+                              "Access-Control-Allow-Headers" "Content-Type, Authorization" \
+                              "Access-Control-Allow-Credentials" "true" \
+                              "Access-Control-Max-Age" "86400" \
+                              "Vary" "Origin"
+            return
+        } else {
+            set cors_origin $origin
+        }
+    }
+}
+
+when HTTP_RESPONSE {
+    if { [info exists cors_origin] } {
+        HTTP::header insert "Access-Control-Allow-Origin" $cors_origin
+        HTTP::header insert "Access-Control-Allow-Credentials" "true"
+        HTTP::header insert "Vary" "Origin"
+    }
+}
+    </pre>
+
+    <h2>Method 4: Public API (No Credentials)</h2>
+    <p><strong>Only use for completely public resources without authentication.</strong> This allows any website to access your API:</p>
+    <pre class="code">
+when HTTP_REQUEST {
+    if { ([HTTP::method] equals "OPTIONS") and
+         ([HTTP::header exists "Access-Control-Request-Method"]) } {
+        # Handle preflight for public API
+        HTTP::respond 200 "Access-Control-Allow-Origin" "*" \
+                          "Access-Control-Allow-Methods" "GET, POST, OPTIONS" \
+                          "Access-Control-Allow-Headers" "Content-Type" \
+                          "Access-Control-Max-Age" "86400"
+        return
+    }
+}
+
+when HTTP_RESPONSE {
+    # Add CORS headers to all responses
+    HTTP::header insert "Access-Control-Allow-Origin" "*"
+}
+    </pre>
+    <p class="note"><strong>Important:</strong> When using wildcard (<code>*</code>) for <code>Access-Control-Allow-Origin</code>, you <strong>cannot</strong> include <code>Access-Control-Allow-Credentials: true</code>. This is a CORS specification requirement.</p>
+
+    <h2>Method 5: Path-Specific CORS (Advanced)</h2>
+    <p>Apply different CORS policies based on URI paths:</p>
+    <pre class="code">
+when HTTP_REQUEST priority 200 {
+    unset -nocomplain cors_origin
+    set uri [HTTP::uri]
+
+    # Public API - no credentials
+    if { $uri starts_with "/api/public" } {
+        if { [HTTP::method] equals "OPTIONS" } {
+            HTTP::respond 200 "Access-Control-Allow-Origin" "*" \
+                              "Access-Control-Allow-Methods" "GET, POST" \
+                              "Access-Control-Allow-Headers" "Content-Type"
+            return
+        }
+        set cors_origin "*"
+    # Private API - with credentials
+    } elseif { $uri starts_with "/api/private" } {
+        if { [HTTP::header Origin] ends_with ".example.com" } {
+            if { [HTTP::method] equals "OPTIONS" } {
+                HTTP::respond 200 "Access-Control-Allow-Origin" [HTTP::header "Origin"] \
+                                  "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE" \
+                                  "Access-Control-Allow-Headers" "Content-Type, Authorization" \
+                                  "Access-Control-Allow-Credentials" "true" \
+                                  "Vary" "Origin"
+                return
+            }
+            set cors_origin [HTTP::header "Origin"]
+            set cors_credentials "true"
+        }
+    }
+}
+
+when HTTP_RESPONSE {
+    if { [info exists cors_origin] } {
+        HTTP::header insert "Access-Control-Allow-Origin" $cors_origin
+        if { [info exists cors_credentials] } {
+            HTTP::header insert "Access-Control-Allow-Credentials" $cors_credentials
+            HTTP::header insert "Vary" "Origin"
+        }
+    }
+}
+    </pre>
+
+    <h2>Understanding the Two-Event Pattern</h2>
+    <p>F5 iRules typically handle CORS using two events:</p>
+    <ul>
+        <li><strong>HTTP_REQUEST</strong>: Validates the origin and handles preflight (OPTIONS) requests immediately</li>
+        <li><strong>HTTP_RESPONSE</strong>: Adds CORS headers to actual API responses after the backend processes the request</li>
+    </ul>
+    <p>This pattern ensures CORS headers are added consistently while allowing the backend to process non-preflight requests normally.</p>
+
+    <h2>Important Security Considerations</h2>
+    <div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+        <strong>⚠️ Security Best Practices:</strong>
+        <ul>
+            <li>Always validate origins - never blindly echo the <code>Origin</code> header without validation</li>
+            <li>When using credentials (<code>Access-Control-Allow-Credentials: true</code>):
+                <ul>
+                    <li>MUST NOT use wildcard (<code>*</code>) for <code>Access-Control-Allow-Origin</code></li>
+                    <li>MUST NOT use wildcard (<code>*</code>) for <code>Access-Control-Allow-Headers</code></li>
+                    <li>Must specify exact origins and header names</li>
+                </ul>
+            </li>
+            <li>Include <code>Vary: Origin</code> header when origin varies to prevent cache poisoning</li>
+            <li>Use pattern matching (e.g., <code>ends_with</code>, <code>equals</code>) rather than wildcards for domain validation</li>
+            <li>Set appropriate <code>Access-Control-Max-Age</code> to reduce preflight requests (86400 = 24 hours)</li>
+        </ul>
+    </div>
+
+    <h2>Applying iRules in BIG-IP</h2>
+    <p>To apply these iRules:</p>
+    <ol>
+        <li>Navigate to <strong>Local Traffic > iRules > iRule List</strong></li>
+        <li>Click <strong>Create</strong> and give your iRule a name</li>
+        <li>Paste the iRule code into the Definition field</li>
+        <li>Click <strong>Finished</strong></li>
+        <li>Go to <strong>Local Traffic > Virtual Servers</strong></li>
+        <li>Select your virtual server</li>
+        <li>Go to the <strong>Resources</strong> tab</li>
+        <li>Under <strong>iRules</strong>, click <strong>Manage</strong></li>
+        <li>Move your iRule from Available to Enabled</li>
+        <li>Click <strong>Finished</strong></li>
+    </ol>
+
+    {% include testing-link.html %}
+
+    <h2>Additional Resources</h2>
+    <ul>
+        <li><a href="https://clouddocs.f5.com/api/irules/">F5 iRules Documentation</a></li>
+        <li><a href="https://community.f5.com/t5/technical-forum/adding-cors-response-headers/td-p/84944">F5 DevCentral CORS Discussion</a></li>
+        <li><a href="https://techdocs.f5.com/en-us/bigip-14-1-0/big-ip-asm-implementations-14-1-0/setting-up-cross-domain-request-enforcement.html">F5 ASM Cross-Domain Request Enforcement</a></li>
+    </ul>
+
+</section>
+</div>
