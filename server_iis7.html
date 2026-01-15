@@ -169,8 +169,6 @@ title: enable cross-origin resource sharing
 				If you don't have a <code>web.config</code> file already, create a new file called <code>web.config</code> at the root of your application or site containing one of the examples above.
 			</p>
 
-			{% include testing-link.html %}
-
 			<h2>Common CORS Errors</h2>
 
 			<h3>No 'Access-Control-Allow-Origin' header is present</h3>
@@ -221,6 +219,8 @@ title: enable cross-origin resource sharing
 				<li><strong>Application-level CORS</strong> - Use middleware instead of checking origin in every request handler</li>
 				<li><strong>Preflight caching</strong> - Set <code>Access-Control-Max-Age</code> to reduce preflight requests (86400 = 24 hours)</li>
 			</ul>
+
+			{% include testing-link.html %}
 
 			<h2>Additional Resources</h2>
 

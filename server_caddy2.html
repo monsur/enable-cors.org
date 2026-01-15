@@ -173,8 +173,6 @@ sitename.com {
       <strong>Warning:</strong> This configuration allows unrestricted access from any website. It provides no origin validation and should only be used for truly public data.
     </p>
 
-    {% include testing-link.html %}
-
     <h2>Key Points</h2>
     <ul>
       <li>Always include <code>Vary: Origin</code> when the response varies by origin to prevent caching issues</li>
@@ -187,5 +185,7 @@ sitename.com {
     <p>
       Instructions for Caddy Version 1 (older version) can be found <a href="server_caddy.html">here</a>.
     </p>
+
+    {% include testing-link.html %}
   </section>
 </div>

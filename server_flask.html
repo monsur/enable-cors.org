@@ -187,8 +187,6 @@ def api_data():
 
     return {"message": "CORS enabled"}</pre>
 
-    {% include testing-link.html %}
-
     <h2>Running the Development Server</h2>
     <p>Run the development server:</p>
 <pre class="code">$ flask run
@@ -198,4 +196,6 @@ $ python app.py</pre>
     <p class="note"><strong>Note:</strong> The Flask-CORS package automatically handles preflight OPTIONS requests, validates origins, and includes the <code>Vary: Origin</code> header when needed. For full details read the <a href="https://flask-cors.readthedocs.io/">Flask-CORS package documentation</a>.</p>
 
     <p class="note"><strong>Production Tip:</strong> Never use <code>CORS(app)</code> without parameters in production. Always explicitly specify allowed origins to prevent security vulnerabilities.</p>
+
+    {% include testing-link.html %}
 </section>

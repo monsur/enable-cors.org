@@ -184,8 +184,6 @@ if (Meteor.isServer) {
 				Your server must allow these headers with <code>Access-Control-Allow-Headers</code>. The examples above include these by default.
 			</p>
 
-			{% include testing-link.html %}
-
 			<h2>Key Security Considerations</h2>
 
 			<ul>
@@ -195,6 +193,8 @@ if (Meteor.isServer) {
 				<li><strong>Handle preflight requests:</strong> Respond to OPTIONS requests with appropriate headers and a 204 status code</li>
 				<li><strong>Use HTTPS in production:</strong> Only allow HTTPS origins in your whitelist for production environments</li>
 			</ul>
+
+			{% include testing-link.html %}
 
 			<h2>Additional Resources</h2>
 
@@ -206,4 +206,3 @@ if (Meteor.isServer) {
 		</section>
 
 	</div>
-

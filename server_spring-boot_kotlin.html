@@ -393,8 +393,6 @@ class CorsTest @Autowired constructor(
 # or
 ./mvnw test</pre>
 
-			{% include testing-link.html %}
-
 			<h3>3. Enable Spring Boot Logging</h3>
 
 			<p>Add to <strong>application.yml</strong> to debug CORS issues:</p>
@@ -437,6 +435,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer</pre>
 			<h3>Pitfall 3: Missing Spring Security Configuration</h3>
 
 			<p>If you use Spring Security without CORS configuration, your CORS settings will be ignored. Always configure CORS in your Security Config when using Spring Security.</p>
+
+			{% include testing-link.html %}
 
 			<h2>Additional Resources</h2>
 
