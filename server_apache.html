@@ -102,6 +102,19 @@ a2enmod headers
 
 		<p class="note"><strong>Note:</strong> You can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's safer to use <code>set</code>. Also, for Apache 2.4+, <code>always</code> can be used (e.g., <code>Header always set</code>) to ensure headers are set even for error responses.</p>
 
+		<h2>Using .htaccess Files</h2>
+		<p>If you're using <code>.htaccess</code> files to configure CORS headers, you must ensure that <code>AllowOverride</code> is enabled in your Apache server configuration. Without this, your <code>.htaccess</code> file will be ignored.</p>
+
+		<p>Add the following to your server configuration file (usually <code>httpd.conf</code>, <code>apache.conf</code>, or a <code>VirtualHost</code> configuration):</p>
+
+		<pre class="code">
+&lt;Directory "/path/to/your/webroot"&gt;
+  AllowOverride All
+&lt;/Directory&gt;
+		</pre>
+
+		<p class="note"><strong>Note:</strong> For security reasons, you may want to use <code>AllowOverride FileInfo</code> instead of <code>AllowOverride All</code> to only allow header modifications. After making changes to server configuration files, remember to test with <code>apachectl -t</code> and reload Apache.</p>
+
     {% include testing-link.html %}
 		</section>
 	</div>
