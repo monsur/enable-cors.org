@@ -13,6 +13,14 @@ title: enable cross-origin resource sharing
 			If you don't have access to configure Apache/Nginx, you can still send CORS headers from a PHP script. This is useful for shared hosting or when you need different CORS policies for different endpoints.
 		</p>
 
+		<p class="note">
+			<strong>Important:</strong> As with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, CORS headers must be sent <strong>before any output</strong> has been sent from the server. Call <code>header()</code> before any <code>echo</code>, <code>print</code>, or HTML output.
+		</p>
+
+		<p class="note">
+			<strong>Tip:</strong> For production applications, consider using a PHP framework like Laravel, Symfony, or Slim which have built-in CORS middleware packages that handle all edge cases automatically.
+		</p>
+
 		<h2>Method 1: Simple Single Origin (Recommended)</h2>
 		<pre class="code">&lt;?php
 // Allow from specific origin
@@ -145,14 +153,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 		{% include testing-link.html %}
 
-		<p class="note">
-			<strong>Important:</strong> As with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, CORS headers must be sent <strong>before any output</strong> has been sent from the server. Call <code>header()</code> before any <code>echo</code>, <code>print</code>, or HTML output.
-		</p>
-
-		<p class="note">
-			<strong>Tip:</strong> For production applications, consider using a PHP framework like Laravel, Symfony, or Slim which have built-in CORS middleware packages that handle all edge cases automatically.
-		</p>
-
 		</section>
 	</div>
-
