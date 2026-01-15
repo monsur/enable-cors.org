@@ -7,9 +7,7 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on ExpressJS</h1>
 
-		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
-			<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
-		</div>
+		{% include security-warning.html %}
 
 		<h2>Method 1: Using the cors Package (Recommended)</h2>
 		<p>The <code>cors</code> npm package is the standard solution for <a href="http://expressjs.com/">Express.js</a> CORS handling. It's well-maintained, handles all edge cases, and is used by millions of projects (<a href="https://github.com/monsur/enable-cors.org/issues/138">issue #138</a>).</p>

@@ -11,9 +11,7 @@ title: enable cross-origin resource sharing
 				If you don't have access to configure your web server, you can still send CORS headers from a ColdFusion script. This guide shows secure implementations for ColdFusion 11+ and earlier versions.
 			</p>
 
-			<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
-				<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
-			</div>
+			{% include security-warning.html %}
 
 			<h2>Recommended: Secure Implementation with Origin Validation</h2>
 			<p>

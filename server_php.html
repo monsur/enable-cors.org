@@ -7,9 +7,7 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on PHP</h1>
 
-		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
-			<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
-		</div>
+		{% include security-warning.html %}
 
 		<p>
 			If you don't have access to configure Apache/Nginx, you can still send CORS headers from a PHP script. This is useful for shared hosting or when you need different CORS policies for different endpoints.

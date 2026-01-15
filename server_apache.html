@@ -7,9 +7,7 @@ title: enable cross-origin resource sharing
 		<section>
 		<h1>CORS on Apache</h1>
 
-		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
-			<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
-		</div>
+		{% include security-warning.html %}
 
 		<h2>Method 1: Simple Configuration (Least Secure)</h2>
     <p>To add CORS authorization to all responses, add the following inside either the <code>&lt;Directory&gt;</code>, <code>&lt;Location&gt;</code>, <code>&lt;Files&gt;</code> or <code>&lt;VirtualHost&gt;</code> sections of your server config (usually located in a *.conf file, such as httpd.conf or apache.conf), or within a <code>.htaccess</code> file:
