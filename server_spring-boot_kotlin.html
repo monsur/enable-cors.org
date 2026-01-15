@@ -11,8 +11,8 @@ title: enable cross-origin resource sharing
 				<a href="https://spring.io/projects/spring-boot">Spring Boot</a> with <a href="https://kotlinlang.org/">Kotlin</a> provides multiple elegant ways to configure CORS. This guide covers modern, secure implementations for both reactive (WebFlux) and traditional (Spring MVC) applications.
 			</p>
 
-			<div class="notebox">
-				<p><strong>Security Note:</strong> Never use <code>Access-Control-Allow-Origin: *</code> with credentials. The CORS specification only allows a single origin value - use explicit origin whitelisting for multiple domains. See <a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a> and <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for more details.</p>
+			<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+				<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
 			</div>
 
 			<div class="notebox">

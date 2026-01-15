@@ -11,8 +11,8 @@ title: enable cross-origin resource sharing
 				Internet Information Services (IIS) 7 and later versions provide multiple approaches for configuring CORS. This guide covers modern, secure CORS implementations using web.config and the IIS CORS Module.
 			</p>
 
-			<div class="notebox">
-				<p><strong>Security Note:</strong> Never use <code>Access-Control-Allow-Origin: *</code> with credentials. The CORS specification only allows a single origin value - use dynamic origin validation for multiple domains. See <a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a> and <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for more details.</p>
+			<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+				<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
 			</div>
 
 			<div class="notebox">
@@ -149,8 +149,8 @@ title: enable cross-origin resource sharing
 
 			<h2>Public API Configuration</h2>
 
-			<div class="notebox">
-				<p><strong>Security Warning:</strong> The example below uses <code>Access-Control-Allow-Origin: *</code> which allows ANY website to access your resources. This is only appropriate for completely public APIs. For most use cases, you should validate and whitelist specific origins.</p>
+			<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+				<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
 			</div>
 
 			<p>For truly public APIs that don't use credentials:</p>

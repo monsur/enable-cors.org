@@ -8,7 +8,7 @@ title: enable cross-origin resource sharing
 		<h1>CORS on Tomcat</h1>
 
 		<div class="warning" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
-			<strong>⚠️ Security Warning:</strong> The default CorsFilter configuration uses <code>Access-Control-Allow-Origin: *</code> which allows <strong>any website</strong> to access your API. Always specify exact allowed origins using <code>cors.allowed.origins</code> parameter. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
+			<strong>⚠️ Security Warning:</strong> Using <code>Access-Control-Allow-Origin: *</code> allows <strong>any website</strong> to access your resources. Always specify exact origins in production. See <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a> for security concerns.
 		</div>
 
 		<p>Apache Tomcat includes built-in support for CORS via the <code>CorsFilter</code> (available since Tomcat 7.0.41). Configure it in your application's <code>web.xml</code> file.</p>
