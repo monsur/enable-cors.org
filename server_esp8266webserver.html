@@ -1,0 +1,303 @@
+---
+layout: default
+title: enable cross-origin resource sharing
+---
+
+	<div class="container">
+		<section>
+		<h1>CORS on ESP8266WebServer</h1>
+
+		{% include security-warning.html %}
+
+		<p>
+			<a href="https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer">ESP8266WebServer</a> is a web server library for ESP8266 microcontrollers in Arduino projects. It's commonly used to create REST APIs and web interfaces for IoT devices. This guide shows how to add CORS headers to your ESP8266 HTTP responses.
+		</p>
+
+		<p class="note">
+			<strong>Note:</strong> These examples work with the ESP8266WebServer library included in the ESP8266 Arduino Core. For ESP32, use the similar WebServer library with the same approach.
+		</p>
+
+		<h2>Method 1: Simple Single Origin (Recommended)</h2>
+		<p>Allow requests from a specific origin:</p>
+		<pre class="code">#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+ESP8266WebServer server(80);
+
+void handleRequest() {
+  // Set CORS headers for specific origin
+  server.sendHeader("Access-Control-Allow-Origin", "https://example.com");
+  server.sendHeader("Vary", "Origin");
+
+  // Send response
+  server.send(200, "application/json", "{\"message\":\"CORS enabled\"}");
+}
+
+void setup() {
+  // Connect to WiFi
+  WiFi.begin("your-ssid", "your-password");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  // Define routes
+  server.on("/api/data", HTTP_GET, handleRequest);
+
+  // Start server
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}</pre>
+
+		<h2>Method 2: Multiple Origins with Validation</h2>
+		<p>To allow multiple specific origins (<a href="https://github.com/monsur/enable-cors.org/issues/146">issue #146</a>):</p>
+		<pre class="code">#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+ESP8266WebServer server(80);
+
+// List of allowed origins
+const char* allowedOrigins[] = {
+  "https://example.com",
+  "https://app.example.com"
+};
+const int numAllowedOrigins = 2;
+
+// Function to check if origin is allowed
+bool isOriginAllowed(String origin) {
+  for (int i = 0; i < numAllowedOrigins; i++) {
+    if (origin == allowedOrigins[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void handleRequest() {
+  // Get origin from request header
+  String origin = server.header("Origin");
+
+  // Validate and set CORS headers
+  if (isOriginAllowed(origin)) {
+    server.sendHeader("Access-Control-Allow-Origin", origin);
+    server.sendHeader("Vary", "Origin");
+  }
+
+  // Send response
+  server.send(200, "application/json", "{\"message\":\"CORS enabled\"}");
+}
+
+void setup() {
+  WiFi.begin("your-ssid", "your-password");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  server.on("/api/data", HTTP_GET, handleRequest);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}</pre>
+
+		<h2>Method 3: With Preflight OPTIONS Handling</h2>
+		<p>For APIs that use custom headers or methods like PUT/DELETE:</p>
+		<pre class="code">#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+ESP8266WebServer server(80);
+
+const char* allowedOrigins[] = {
+  "https://example.com",
+  "https://app.example.com"
+};
+const int numAllowedOrigins = 2;
+
+bool isOriginAllowed(String origin) {
+  for (int i = 0; i < numAllowedOrigins; i++) {
+    if (origin == allowedOrigins[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Handle preflight OPTIONS request
+void handleOptions() {
+  String origin = server.header("Origin");
+
+  if (isOriginAllowed(origin)) {
+    server.sendHeader("Access-Control-Allow-Origin", origin);
+    server.sendHeader("Vary", "Origin");
+  }
+
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  server.sendHeader("Access-Control-Max-Age", "86400");
+
+  server.send(204);
+}
+
+// Handle actual request
+void handleRequest() {
+  String origin = server.header("Origin");
+
+  if (isOriginAllowed(origin)) {
+    server.sendHeader("Access-Control-Allow-Origin", origin);
+    server.sendHeader("Vary", "Origin");
+  }
+
+  server.send(200, "application/json", "{\"message\":\"CORS enabled\"}");
+}
+
+void setup() {
+  WiFi.begin("your-ssid", "your-password");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  // Register OPTIONS handler for preflight
+  server.on("/api/data", HTTP_OPTIONS, handleOptions);
+
+  // Register actual request handlers
+  server.on("/api/data", HTTP_GET, handleRequest);
+  server.on("/api/data", HTTP_POST, handleRequest);
+  server.on("/api/data", HTTP_PUT, handleRequest);
+  server.on("/api/data", HTTP_DELETE, handleRequest);
+
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}</pre>
+
+		<h2>Method 4: Reusable CORS Function</h2>
+		<p>Create reusable functions to simplify CORS across multiple endpoints:</p>
+		<pre class="code">#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+ESP8266WebServer server(80);
+
+const char* allowedOrigins[] = {
+  "https://example.com",
+  "https://app.example.com"
+};
+const int numAllowedOrigins = 2;
+
+bool isOriginAllowed(String origin) {
+  for (int i = 0; i < numAllowedOrigins; i++) {
+    if (origin == allowedOrigins[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Reusable function to add CORS headers
+void addCorsHeaders() {
+  String origin = server.header("Origin");
+
+  if (isOriginAllowed(origin)) {
+    server.sendHeader("Access-Control-Allow-Origin", origin);
+    server.sendHeader("Vary", "Origin");
+  }
+}
+
+// Reusable function to handle preflight
+void handleCorsOptions() {
+  addCorsHeaders();
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  server.sendHeader("Access-Control-Max-Age", "86400");
+  server.send(204);
+}
+
+// Example endpoint handlers
+void handleData() {
+  addCorsHeaders();
+  server.send(200, "application/json", "{\"data\":\"value\"}");
+}
+
+void handleStatus() {
+  addCorsHeaders();
+  server.send(200, "application/json", "{\"status\":\"ok\"}");
+}
+
+void setup() {
+  WiFi.begin("your-ssid", "your-password");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  // Register OPTIONS handler for all endpoints
+  server.on("/api/data", HTTP_OPTIONS, handleCorsOptions);
+  server.on("/api/status", HTTP_OPTIONS, handleCorsOptions);
+
+  // Register endpoint handlers
+  server.on("/api/data", HTTP_GET, handleData);
+  server.on("/api/status", HTTP_GET, handleStatus);
+
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}</pre>
+
+		<h2>Method 5: Public API (Wildcard - Use with Caution)</h2>
+		<p><strong>Only use for completely public resources:</strong></p>
+		<pre class="code">#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+ESP8266WebServer server(80);
+
+void handleOptions() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+  server.sendHeader("Access-Control-Max-Age", "86400");
+  server.send(204);
+}
+
+void handleRequest() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "application/json", "{\"message\":\"Public API\"}");
+}
+
+void setup() {
+  WiFi.begin("your-ssid", "your-password");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  server.on("/api/public", HTTP_OPTIONS, handleOptions);
+  server.on("/api/public", HTTP_GET, handleRequest);
+
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}</pre>
+
+		<h2>Important Notes for ESP8266</h2>
+		<ul>
+			<li><strong>Memory Constraints:</strong> ESP8266 has limited RAM (typically 80KB available). Keep origin lists and string operations efficient.</li>
+			<li><strong>Header Order:</strong> Call <code>server.sendHeader()</code> before <code>server.send()</code> to ensure headers are included in the response.</li>
+			<li><strong>HTTPS Origins:</strong> If your ESP8266 serves HTTP only, browsers may block mixed content requests from HTTPS origins. Consider using HTTPS on ESP8266 with <a href="https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServerSecure">ESP8266WebServerSecure</a> for production.</li>
+			<li><strong>Credentials:</strong> If you need to use credentials (cookies), you must specify exact origins and add: <code>server.sendHeader("Access-Control-Allow-Credentials", "true");</code></li>
+			<li><strong>ESP32 Compatibility:</strong> For ESP32, replace <code>ESP8266WebServer</code> with <code>WebServer</code> and <code>#include &lt;WebServer.h&gt;</code>. The API is nearly identical.</li>
+		</ul>
+
+		<p class="note">
+			<strong>Tip:</strong> For complex web applications on ESP8266, consider using <a href="https://github.com/me-no-dev/ESPAsyncWebServer">ESPAsyncWebServer</a> instead, which provides better performance and built-in CORS support through its AsyncCallbackWebHandler.
+		</p>
+
+		{% include testing-link.html %}
+
+		</section>
+	</div>
