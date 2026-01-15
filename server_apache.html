@@ -100,24 +100,7 @@ apachectl -k graceful
 a2enmod headers
     </pre>
 
-    <h2>Testing Your CORS Configuration</h2>
-    <p>Test your configuration with curl:</p>
-
-    <pre class="code">
-# Test with allowed origin
-curl -H "Origin: https://example.com" \
-     -I https://your-domain.com/api/resource
-
-# Should return:
-# Access-Control-Allow-Origin: https://example.com
-# Vary: Origin
-
-# Test preflight request
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     -I https://your-domain.com/api/resource
-    </pre>
+    {% include testing-link.html %}
 
 		<p class="note"><strong>Note:</strong> You can also use <code>add</code> rather than <code>set</code>, but be aware that <code>add</code> can add the header multiple times, so it's safer to use <code>set</code>. Also, for Apache 2.4+, <code>always</code> can be used (e.g., <code>Header always set</code>) to ensure headers are set even for error responses.</p>
 		</section>

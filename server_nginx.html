@@ -148,27 +148,7 @@ nginx -s reload
 sudo systemctl reload nginx
     </pre>
 
-    <h3>Testing Your CORS Configuration</h3>
-    <p>Test with curl to verify your configuration:</p>
-    <pre class="code">
-# Test actual request with allowed origin
-curl -H "Origin: https://example.com" \
-     -I https://your-api.com/api/endpoint
-
-# Should return:
-# Access-Control-Allow-Origin: https://example.com
-# Vary: Origin
-
-# Test preflight request
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     -I https://your-api.com/api/endpoint
-
-# Test with disallowed origin (should NOT return CORS headers)
-curl -H "Origin: https://evil.com" \
-     -I https://your-api.com/api/endpoint
-    </pre>
+    {% include testing-link.html %}
 
     <p class="note"><strong>Important:</strong> The <code>always</code> parameter ensures headers are added even for error responses (4xx, 5xx). This is crucial for CORS to work correctly in all scenarios.</p>
   </section>

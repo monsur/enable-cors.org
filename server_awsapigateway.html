@@ -485,48 +485,7 @@ AllowCredentials: true</pre>
 				</tbody>
 			</table>
 
-			<h2>Testing Your Configuration</h2>
-
-			<h3>Using curl</h3>
-
-			<p>Test preflight request:</p>
-
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS \
-     -v https://api-id.execute-api.region.amazonaws.com/data</pre>
-
-			<p>Test actual request:</p>
-
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -v https://api-id.execute-api.region.amazonaws.com/data</pre>
-
-			<h3>Browser DevTools</h3>
-
-			<ol>
-				<li>Open browser console (F12)</li>
-				<li>Go to Network tab</li>
-				<li>Make request to your API endpoint</li>
-				<li>Check for OPTIONS preflight request</li>
-				<li>Verify CORS headers in response</li>
-				<li>Check Console tab for CORS errors</li>
-			</ol>
-
-			<h3>Automated Testing</h3>
-
-			<pre class="code">// Jest test
-test('API Gateway CORS', async () => {
-  const response = await fetch(API_URL, {
-    method: 'GET',
-    headers: {
-      'Origin': 'https://example.com'
-    }
-  });
-
-  expect(response.headers.get('Access-Control-Allow-Origin'))
-    .toBe('https://example.com');
-});</pre>
+			{% include testing-link.html %}
 
 			<h2>Monitoring and Debugging</h2>
 

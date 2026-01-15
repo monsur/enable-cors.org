@@ -169,36 +169,7 @@ title: enable cross-origin resource sharing
 				If you don't have a <code>web.config</code> file already, create a new file called <code>web.config</code> at the root of your application or site containing one of the examples above.
 			</p>
 
-			<h2>Testing Your Configuration</h2>
-
-			<h3>Using curl</h3>
-
-			<p>Test preflight request:</p>
-
-			<pre class="code">curl -H &quot;Origin: https://example.com&quot; \
-     -H &quot;Access-Control-Request-Method: POST&quot; \
-     -H &quot;Access-Control-Request-Headers: Content-Type&quot; \
-     -X OPTIONS \
-     -v https://your-api.com/endpoint</pre>
-
-			<p>Expected headers in response:</p>
-
-			<pre class="code">Access-Control-Allow-Origin: https://example.com
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-Access-Control-Allow-Headers: Content-Type, Authorization
-Access-Control-Max-Age: 86400
-Vary: Origin</pre>
-
-			<h3>Browser DevTools</h3>
-
-			<ol>
-				<li>Open browser DevTools (F12)</li>
-				<li>Go to Network tab</li>
-				<li>Make a cross-origin request</li>
-				<li>Check response headers for CORS headers</li>
-				<li>Look for OPTIONS preflight request (for non-simple requests)</li>
-				<li>Check Console tab for CORS errors</li>
-			</ol>
+			{% include testing-link.html %}
 
 			<h2>Common CORS Errors</h2>
 

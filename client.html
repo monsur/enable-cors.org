@@ -17,6 +17,211 @@ title: enable cross-origin resource sharing
 
 		</section>
 
+		<section id="testing">
+		<h2>Testing Your CORS Configuration</h2>
+		<p>After configuring CORS on your server, it's important to verify that your configuration works correctly. This guide covers multiple testing approaches to ensure your CORS setup is working as expected.</p>
+
+		<h3>Using curl</h3>
+		<p>The curl command-line tool is the quickest way to test CORS headers. Here are common test scenarios:</p>
+
+		<h4>Test a Simple Request</h4>
+		<p>Test a basic GET request with an Origin header:</p>
+		<pre class="code"># Test with allowed origin
+curl -H "Origin: https://example.com" \
+     -I https://your-api.com/endpoint
+
+# Expected response headers:
+# Access-Control-Allow-Origin: https://example.com
+# Vary: Origin</pre>
+
+		<h4>Test Preflight Request</h4>
+		<p>For requests with custom headers or methods like PUT/DELETE, browsers send a preflight OPTIONS request:</p>
+		<pre class="code"># Test preflight
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: Content-Type, Authorization" \
+     -X OPTIONS \
+     -I https://your-api.com/endpoint
+
+# Expected response headers:
+# Access-Control-Allow-Origin: https://example.com
+# Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+# Access-Control-Allow-Headers: Content-Type, Authorization
+# Access-Control-Max-Age: 86400</pre>
+
+		<h4>Test Actual Request with Custom Headers</h4>
+		<p>After preflight succeeds, test the actual request:</p>
+		<pre class="code"># POST request with custom headers
+curl -H "Origin: https://example.com" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer token123" \
+     -X POST \
+     -d '{"test":"data"}' \
+     https://your-api.com/endpoint</pre>
+
+		<h4>Test Disallowed Origin</h4>
+		<p>Verify that unauthorized origins are rejected:</p>
+		<pre class="code"># Test with disallowed origin
+curl -H "Origin: https://evil.com" \
+     -I https://your-api.com/endpoint
+
+# Should NOT return Access-Control-Allow-Origin header</pre>
+
+		<h4>Test with Credentials</h4>
+		<p>If your API supports credentials (cookies, auth):</p>
+		<pre class="code"># Test with credentials
+curl -H "Origin: https://example.com" \
+     --cookie "session=abc123" \
+     -I https://your-api.com/endpoint
+
+# Expected response headers:
+# Access-Control-Allow-Origin: https://example.com
+# Access-Control-Allow-Credentials: true
+# Vary: Origin</pre>
+
+		<h3>Using Browser DevTools</h3>
+		<p>Browser developer tools provide detailed CORS debugging information:</p>
+
+		<h4>Network Tab Inspection</h4>
+		<ol>
+			<li>Open DevTools (F12 or right-click → Inspect)</li>
+			<li>Go to the Network tab</li>
+			<li>Make a cross-origin request from your application</li>
+			<li>Look for the OPTIONS request (preflight) if using custom headers/methods</li>
+			<li>Click on the request to view headers</li>
+			<li>Check Response Headers for CORS headers:
+				<ul>
+					<li><code>Access-Control-Allow-Origin</code></li>
+					<li><code>Access-Control-Allow-Methods</code></li>
+					<li><code>Access-Control-Allow-Headers</code></li>
+					<li><code>Access-Control-Allow-Credentials</code></li>
+					<li><code>Vary: Origin</code></li>
+				</ul>
+			</li>
+		</ol>
+
+		<h4>Console Error Messages</h4>
+		<p>The browser console displays helpful CORS error messages. Common patterns:</p>
+		<ul>
+			<li><strong>No CORS headers:</strong> "No 'Access-Control-Allow-Origin' header is present"</li>
+			<li><strong>Origin mismatch:</strong> "The 'Access-Control-Allow-Origin' header has a value that is not equal to the supplied origin"</li>
+			<li><strong>Credentials issue:</strong> "Credential is not supported if the CORS header 'Access-Control-Allow-Origin' is '*'"</li>
+			<li><strong>Method not allowed:</strong> "Method POST is not allowed by Access-Control-Allow-Methods"</li>
+			<li><strong>Header not allowed:</strong> "Request header field Authorization is not allowed by Access-Control-Allow-Headers"</li>
+		</ul>
+
+		<h4>Test in Browser Console</h4>
+		<p>Quickly test CORS from the browser console:</p>
+		<pre class="code">// Simple GET request
+fetch('https://your-api.com/endpoint', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+.then(response => response.json())
+.then(data => console.log('Success:', data))
+.catch(error => console.error('CORS Error:', error));
+
+// POST with credentials
+fetch('https://your-api.com/endpoint', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer token123'
+  },
+  body: JSON.stringify({test: 'data'})
+})
+.then(response => response.json())
+.then(data => console.log('Success:', data))
+.catch(error => console.error('CORS Error:', error));</pre>
+
+		<h3>Common CORS Errors</h3>
+
+		<h4>No 'Access-Control-Allow-Origin' header is present</h4>
+		<p><strong>Cause:</strong> Server is not sending CORS headers.</p>
+		<p><strong>Solution:</strong> Configure your server to send the <code>Access-Control-Allow-Origin</code> header. See the server-specific guides for your platform.</p>
+
+		<h4>The 'Access-Control-Allow-Origin' header contains multiple values</h4>
+		<p><strong>Cause:</strong> CORS headers are being set in multiple places (e.g., both application code and web server config).</p>
+		<p><strong>Solution:</strong> Choose one configuration method and remove the duplicate. Check both your application code and web server configuration.</p>
+
+		<h4>Credential is not supported if CORS header is '*'</h4>
+		<p><strong>Cause:</strong> Using <code>Access-Control-Allow-Origin: *</code> with <code>Access-Control-Allow-Credentials: true</code>.</p>
+		<p><strong>Solution:</strong> Specify exact origin instead of wildcard when using credentials:</p>
+		<pre class="code">Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Credentials: true</pre>
+
+		<h4>Method [METHOD] is not allowed by Access-Control-Allow-Methods</h4>
+		<p><strong>Cause:</strong> The HTTP method you're using is not listed in <code>Access-Control-Allow-Methods</code>.</p>
+		<p><strong>Solution:</strong> Add the method to your CORS configuration:</p>
+		<pre class="code">Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS</pre>
+
+		<h4>Request header field [HEADER] is not allowed</h4>
+		<p><strong>Cause:</strong> Custom header is not listed in <code>Access-Control-Allow-Headers</code>.</p>
+		<p><strong>Solution:</strong> Add the header to your CORS configuration:</p>
+		<pre class="code">Access-Control-Allow-Headers: Content-Type, Authorization, X-Custom-Header</pre>
+
+		<h4>Redirect is not allowed for a preflight request</h4>
+		<p><strong>Cause:</strong> Server is redirecting the OPTIONS preflight request.</p>
+		<p><strong>Solution:</strong> Ensure preflight OPTIONS requests return 204 No Content without redirects. Check for trailing slash redirects or authentication redirects on OPTIONS requests.</p>
+
+		<h3>Expected Response Headers</h3>
+		<p>A properly configured CORS server should return these headers:</p>
+
+		<h4>For All CORS Requests</h4>
+		<pre class="code">Access-Control-Allow-Origin: https://example.com
+Vary: Origin</pre>
+
+		<h4>For Preflight OPTIONS Requests</h4>
+		<pre class="code">Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 86400
+Vary: Origin</pre>
+
+		<h4>With Credentials</h4>
+		<pre class="code">Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Credentials: true
+Vary: Origin</pre>
+
+		<h4>With Exposed Headers</h4>
+		<p>If your API returns custom headers that the client needs to access:</p>
+		<pre class="code">Access-Control-Expose-Headers: X-Custom-Header, X-Total-Count</pre>
+
+		<h3>Troubleshooting Checklist</h3>
+
+		<p>If CORS isn't working, check these common issues:</p>
+
+		<ol>
+			<li><strong>Headers sent before output:</strong> In PHP, CGI, and similar environments, headers must be set before any output</li>
+			<li><strong>Server config vs application code:</strong> Ensure you're not setting CORS headers in both places (can cause duplicates)</li>
+			<li><strong>OPTIONS method handled:</strong> Ensure your server responds to OPTIONS requests with 204 No Content</li>
+			<li><strong>Vary header included:</strong> Always include <code>Vary: Origin</code> when dynamically setting the origin</li>
+			<li><strong>No trailing slashes:</strong> URL mismatches (with/without trailing slash) can cause issues</li>
+			<li><strong>Authentication on OPTIONS:</strong> Preflight OPTIONS should NOT require authentication</li>
+			<li><strong>Wildcard with credentials:</strong> Cannot use <code>*</code> with <code>Access-Control-Allow-Credentials: true</code></li>
+			<li><strong>HTTPS requirements:</strong> Some browsers require HTTPS for certain CORS scenarios</li>
+			<li><strong>Port numbers:</strong> Different ports are considered different origins (https://example.com:3000 ≠ https://example.com:8080)</li>
+			<li><strong>Cache issues:</strong> Clear browser cache or use incognito/private mode for testing</li>
+		</ol>
+
+		<h3>Testing Tools</h3>
+
+		<p>Additional tools for CORS testing:</p>
+
+		<ul>
+			<li><a href="https://www.test-cors.org/">test-cors.org</a> - Online CORS testing tool</li>
+			<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">MDN CORS Documentation</a> - Comprehensive CORS reference</li>
+			<li>Browser extensions for modifying headers (useful for testing different origins)</li>
+			<li>Postman or similar API testing tools (note: these don't enforce CORS like browsers do)</li>
+		</ul>
+
+		<p class="note"><strong>Important:</strong> Tools like Postman and curl don't enforce CORS restrictions - only browsers do. Always test in an actual browser for accurate CORS validation.</p>
+
+		</section>
+
 <!-- TODO items:
 		<section>
 		Overview of how to make CORS requests, including details about:

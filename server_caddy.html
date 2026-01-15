@@ -162,38 +162,7 @@ example.com {
       </li>
     </ul>
 
-    <h2>Testing Your Configuration</h2>
-    <p>
-      Test with curl to verify CORS headers:
-    </p>
-    <pre class="code">
-# Test preflight request
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS \
-     -v https://your-caddy-site.com/api/endpoint
-
-# Test actual request
-curl -H "Origin: https://example.com" \
-     -X GET \
-     -v https://your-caddy-site.com/api/data</pre>
-
-    <p>
-      Or test with JavaScript in the browser console:
-    </p>
-    <pre class="code">
-fetch('https://your-caddy-site.com/api/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  credentials: 'include', // If using credentials
-  body: JSON.stringify({test: 'data'})
-})
-.then(r => r.json())
-.then(console.log)
-.catch(console.error);</pre>
+    {% include testing-link.html %}
 
     <h2>Troubleshooting</h2>
     <h3>CORS errors despite configuration:</h3>

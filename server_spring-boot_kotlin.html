@@ -393,21 +393,7 @@ class CorsTest @Autowired constructor(
 # or
 ./mvnw test</pre>
 
-			<h3>2. Test with curl</h3>
-
-			<p>Test actual request:</p>
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -H "Content-Type: application/json" \
-     http://localhost:8080/api/data \
-     -v</pre>
-
-			<p>Test preflight:</p>
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS \
-     http://localhost:8080/api/data \
-     -v</pre>
+			{% include testing-link.html %}
 
 			<h3>3. Enable Spring Boot Logging</h3>
 
@@ -418,16 +404,6 @@ class CorsTest @Autowired constructor(
     org.springframework.web.cors: DEBUG
     org.springframework.security.web.cors: DEBUG</pre>
 
-			<h3>4. Browser DevTools</h3>
-
-			<ol>
-				<li>Open browser console (F12)</li>
-				<li>Go to Network tab</li>
-				<li>Make request to your API endpoint</li>
-				<li>Check for preflight OPTIONS requests</li>
-				<li>Verify CORS headers in response</li>
-				<li>Check Console tab for CORS errors</li>
-			</ol>
 
 			<h2>Common Pitfalls</h2>
 

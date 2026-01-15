@@ -192,16 +192,7 @@ Response.AppendHeader("Access-Control-Allow-Origin", "https://example.com");</pr
 			Note: This approach is compatible with IIS6, IIS7 Classic Mode, and IIS7 Integrated Mode.
 		</p>
 
-		<h2>Testing Your Configuration</h2>
-		<pre class="code"># Test actual request
-curl -H "Origin: https://example.com" \
-     http://localhost:5000/api/data
-
-# Test preflight
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     http://localhost:5000/api/data</pre>
+		{% include testing-link.html %}
 
 		<p class="note">
 			<strong>Recommendation:</strong> For new applications, use ASP.NET Core which has superior CORS support. For more information, see the official <a href="https://docs.microsoft.com/aspnet/core/security/cors">ASP.NET Core CORS documentation</a> and legacy <a href="https://docs.microsoft.com/aspnet/web-api/overview/security/enabling-cross-origin-requests-in-web-api">Web API 2 documentation</a>.

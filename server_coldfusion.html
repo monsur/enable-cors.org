@@ -169,23 +169,7 @@ response.setHeader("Access-Control-Allow-Origin","*");</pre>
 				<strong>Important:</strong> Headers must be set before any output has been sent from the server.
 			</p>
 
-			<h2>Testing Your Configuration</h2>
-			<p>
-				Test your CORS implementation using curl or browser tools:
-			</p>
-			<h3>Test Preflight Request</h3>
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     -v http://your-cf-server.com/api/endpoint.cfm</pre>
-
-			<h3>Test in Browser Console</h3>
-			<pre class="code">fetch('http://your-cf-server.com/api/endpoint.cfm', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  credentials: 'include',
-  body: JSON.stringify({test: 'data'})
-}).then(r => r.json()).then(console.log);</pre>
+			{% include testing-link.html %}
 
 			<h2>Version Compatibility</h2>
 			<ul>

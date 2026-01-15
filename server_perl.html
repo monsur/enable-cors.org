@@ -309,23 +309,7 @@ starman --workers 10 --port 5000 app.psgi
 # With environment
 PLACK_ENV=production starman app.psgi</pre>
 
-<h2>Testing CORS</h2>
-
-<p>Test your CORS configuration with curl:</p>
-
-<pre class="code"># Test preflight request
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS \
-     -v http://localhost:5000/
-
-# Test actual request
-curl -H "Origin: https://example.com" \
-     -H "Content-Type: application/json" \
-     -X POST \
-     -d '{"test":"data"}' \
-     -v http://localhost:5000/</pre>
+{% include testing-link.html %}
 
 <h2>Additional Resources</h2>
 

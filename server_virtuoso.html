@@ -231,50 +231,7 @@ IF (check_cors(request_origin, origins) = 0)
 -- Continue with application logic...
 ?&gt;</pre>
 
-			<h2>Testing Your Configuration</h2>
-
-			<h3>Test with curl</h3>
-
-			<pre class="code"># Test actual request
-curl -H "Origin: https://example.com" \
-     http://localhost:8890/sparql \
-     -v
-
-# Test preflight
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     http://localhost:8890/sparql \
-     -v
-
-# Test SPARQL query with CORS
-curl -H "Origin: https://example.com" \
-     -H "Content-Type: application/sparql-query" \
-     -d "SELECT * WHERE { ?s ?p ?o } LIMIT 10" \
-     http://localhost:8890/sparql \
-     -v</pre>
-
-			<h3>Test SPARQL Endpoint from JavaScript</h3>
-
-			<pre class="code">// JavaScript client
-fetch('http://localhost:8890/sparql', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/sparql-query',
-    'Accept': 'application/sparql-results+json'
-  },
-  body: 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'
-})
-  .then(r =&gt; r.json())
-  .then(console.log)
-  .catch(console.error);</pre>
-
-			<h3>Verify Headers</h3>
-
-			<p>Expected response headers for a valid origin:</p>
-			<pre class="code">Access-Control-Allow-Origin: https://example.com
-Vary: Origin
-Access-Control-Allow-Methods: GET, POST, OPTIONS</pre>
+			{% include testing-link.html %}
 
 			<h2>Additional Resources</h2>
 

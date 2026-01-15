@@ -144,18 +144,7 @@ print encode_json($response);</pre>
 
 <p>For more information on CORS security, see <a href="https://github.com/monsur/enable-cors.org/issues/152">issue #152</a>.</p>
 
-<h2>Testing Your CGI Script</h2>
-
-<h3>Test with curl</h3>
-<pre class="code"># Test basic request
-curl -H "Origin: https://example.com" \
-     -v http://your-server.com/cgi-bin/script.cgi
-
-# Test preflight
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     -v http://your-server.com/cgi-bin/script.cgi</pre>
+{% include testing-link.html %}
 
 <h3>Common CGI Issues</h3>
 <ul>

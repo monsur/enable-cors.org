@@ -184,26 +184,7 @@ if (Meteor.isServer) {
 				Your server must allow these headers with <code>Access-Control-Allow-Headers</code>. The examples above include these by default.
 			</p>
 
-			<h2>Testing CORS</h2>
-
-			<p>Test CORS with curl:</p>
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -v http://localhost:3000/api/endpoint</pre>
-
-			<p>Test preflight requests:</p>
-			<pre class="code">curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS \
-     -v http://localhost:3000/api/endpoint</pre>
-
-			<p>Test from browser console:</p>
-			<pre class="code">fetch('http://localhost:3000/api/data', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  credentials: 'include',
-  body: JSON.stringify({test: 'data'})
-}).then(r => r.json()).then(console.log);</pre>
+			{% include testing-link.html %}
 
 			<h2>Key Security Considerations</h2>
 

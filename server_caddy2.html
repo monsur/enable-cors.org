@@ -173,24 +173,7 @@ sitename.com {
       <strong>Warning:</strong> This configuration allows unrestricted access from any website. It provides no origin validation and should only be used for truly public data.
     </p>
 
-    <h2>Testing Your Configuration</h2>
-    <p>Test preflight requests:</p>
-    <pre class="code">
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type, Authorization" \
-     -X OPTIONS \
-     -v https://your-site.com/api/endpoint
-</pre>
-
-    <p>Test actual CORS requests:</p>
-    <pre class="code">
-curl -H "Origin: https://example.com" \
-     -H "Content-Type: application/json" \
-     -X POST \
-     -d '{"test":"data"}' \
-     -v https://your-site.com/api/endpoint
-</pre>
+    {% include testing-link.html %}
 
     <h2>Key Points</h2>
     <ul>

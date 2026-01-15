@@ -188,25 +188,7 @@ app.get('/api/data', (req, res) => {
 
 app.listen(3000);</pre>
 
-		<h2>Testing Your CORS Configuration</h2>
-		<p>Test your configuration with curl:</p>
-		<pre class="code"># Test preflight request
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS \
-     -v http://localhost:3000/api/data
-
-# Test actual request
-curl -H "Origin: https://example.com" \
-     -H "Content-Type: application/json" \
-     -X POST \
-     -d '{"test":"data"}' \
-     -v http://localhost:3000/api/data
-
-# Test disallowed origin (should NOT return CORS headers)
-curl -H "Origin: https://evil.com" \
-     -v http://localhost:3000/api/data</pre>
+		{% include testing-link.html %}
 
 		<p class="note"><strong>Note:</strong> The <code>cors</code> package handles preflight requests automatically, validates origins correctly, and handles edge cases you might miss in manual implementations. See the <a href="https://www.npmjs.com/package/cors">official cors package documentation</a> for more information.</p>
 

@@ -143,25 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Your public API logic here</pre>
 
-		<h2>Testing Your Configuration</h2>
-		<p>Test your CORS headers using curl:</p>
-		<pre class="code"># Test actual request
-curl -H "Origin: https://example.com" \
-     -I https://your-api.com/api.php
-
-# Should return:
-# Access-Control-Allow-Origin: https://example.com
-# Vary: Origin
-
-# Test preflight request
-curl -H "Origin: https://example.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     -I https://your-api.com/api.php
-
-# Test disallowed origin (should NOT return CORS headers)
-curl -H "Origin: https://evil.com" \
-     -I https://your-api.com/api.php</pre>
+		{% include testing-link.html %}
 
 		<p class="note">
 			<strong>Important:</strong> As with all uses of the PHP <a href="http://php.net/manual/en/function.header.php">header function</a>, CORS headers must be sent <strong>before any output</strong> has been sent from the server. Call <code>header()</code> before any <code>echo</code>, <code>print</code>, or HTML output.
