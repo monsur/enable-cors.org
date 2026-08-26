@@ -24,6 +24,10 @@ location /api {
     add_header 'Vary' 'Origin' always;
 
     if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' 'https://example.com' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        add_header 'Vary' 'Origin' always;
         add_header 'Access-Control-Max-Age' 86400;
         add_header 'Content-Type' 'text/plain; charset=utf-8';
         add_header 'Content-Length' 0;
@@ -50,6 +54,10 @@ location /api {
     add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
 
     if ($request_method = 'OPTIONS') {
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Origin' $cors_origin always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
         add_header 'Access-Control-Max-Age' 86400;
         add_header 'Content-Type' 'text/plain; charset=utf-8';
         add_header 'Content-Length' 0;
@@ -70,6 +78,11 @@ location /api {
     add_header 'Vary' 'Origin' always;
 
     if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' 'https://example.com' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+        add_header 'Vary' 'Origin' always;
         add_header 'Access-Control-Max-Age' 86400;
         return 204;
     }
@@ -127,6 +140,9 @@ location /public-api {
     add_header 'Access-Control-Allow-Headers' 'Content-Type' always;
 
     if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type' always;
         add_header 'Access-Control-Max-Age' 86400;
         add_header 'Content-Type' 'text/plain; charset=utf-8';
         add_header 'Content-Length' 0;
